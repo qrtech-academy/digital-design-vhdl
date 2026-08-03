@@ -2,8 +2,10 @@
 name: CI
 
 # Set pipeline triggers. The weekly run is a canary for rot in the environment rather than in
-# the repo: a runner image change, or an action that stops resolving. GHDL is pinned and no
-# check fetches an external URL, so nothing else can drift between commits.
+# the repo: an action that stops resolving, or a package that disappears. Every job pins its
+# runner image rather than taking ubuntu-latest, because the image is a toolchain input like any
+# other: "latest" moving from 22.04 to 24.04 is what broke the GHDL job once already, and the
+# figure job below compares PNGs byte for byte, which a font or library change would defeat.
 on:
   push:
     branches: [main]
@@ -34,18 +36,22 @@ jobs:
   # that is not exercised locally is the one that rots.
   build:
     name: GHDL build and simulate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      # Installed the way README.md tells a participant to install it, so CI runs the toolchain
+      # they will actually have rather than a separately published binary. Ubuntu 24.04 ships
+      # GHDL 4.1.0 and an LTS holds its package version, so this is pinned in practice without
+      # pinning a download URL. It also replaces the release-inventory route, which publishes no
+      # 4.1.0 build for 24.04 at all.
       - name: Install GHDL
-        uses: ghdl/setup-ghdl@v1
-        with:
-          # Pinned: an unpinned toolchain turns CI red on somebody else's release schedule.
-          version: '4.1.0'
-          backend: mcode
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ghdl
+          ghdl --version
 
       - name: Analyze, elaborate, and simulate every example
         run: make build
@@ -53,7 +59,7 @@ jobs:
   # Cheap checks that need no toolchain, so they report independently of the build.
   lint:
     name: Duplicate modules, Markdown links, and VHDL whitespace
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Check out repository
@@ -73,7 +79,7 @@ jobs:
   # PNG, or hand-edit a generated PNG, and this is where it surfaces.
   diagrams:
     name: Committed figures match diagrams/build.py
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Check out repository
