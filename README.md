@@ -98,6 +98,27 @@ After completing the course, participants should be able to:
 
 ---
 
+## Written Examinations
+Nothing in this course is marked. Assessment is the exercises after every lecture, the self-checking
+testbench nearly every one of them ships, and the circuit you predict and then simulate by hand in
+CircuitVerse before any VHDL exists - the three layers described above, each of which checks a module
+you wrote or a behaviour you predicted beside it.
+
+[`exam/`](./exam/README.md) holds two three-hour papers with worked solutions, and they check
+something else: **your own skills and knowledge, on paper, with nothing in front of you.** Eight
+questions each, one per lecture, mixing theory with VHDL you write out by hand and with designs that
+compile cleanly and are wrong anyway.
+
+**They are there for you to test yourself with after the course, and nothing more.** They gate
+nothing, they are not a qualification, and no part of the course requires them. No design is built
+from them and `make build` does not know they exist.
+
+**Take one once the course is over**, after L08 and the two capstones. Both papers draw on all eight
+lectures, so sitting one partway through examines material nobody has taught you yet, and the result
+says more about how far you have read than about what you have understood.
+
+---
+
 ## Structure
 
 ```text
@@ -105,6 +126,7 @@ Makefile     Entry point for the checks below; run `make help` for the target li
 ci/          Check scripts: GHDL build, vendored-copy drift, Markdown links.
 info/        Course info: prerequisites, instructor, course plan, per-lecture topic breakdown.
 lectures/    Per lecture: README, appendix/, exercises/, solutions/, and worked examples.
+exam/        Two written papers and their solutions. Optional, and marked by nobody here.
 diagrams/    Python sources for the generated figures, and the exercise entity definitions.
 ```
 
