@@ -1,0 +1,449 @@
+% Section 7.7, from lectures/L07/appendix/b_exercises.md.
+
+\section{Exercises}
+\label{c7:sec:exercises}
+
+\begin{aside}
+\textbf{How to work these.} Each exercise is tagged with the kinds of work it asks for:
+\kinds{Paper} by hand, \kinds{CircuitVerse} in the browser, \kinds{VHDL} in a module of your own.
+
+\textbf{How to check your work.} Every exercise below that asks you to write a VHDL module ships a
+self-checking testbench under \file{lectures/L07/exercises} in the companion repository. Write your
+module in its \file{exercises/<module>} directory, using the entity name and the \textbf{port
+order} the exercise specifies, then run it with GHDL; \secref{c2:app:c} has the three commands.
+
+From this chapter on, designs reuse modules you wrote earlier, and those are not shipped a second
+time: each exercise says which of your own files to copy in and prints the \code{ghdl -a} line that
+needs them.
+
+No FPGA board is needed for any exercise. The Quartus synthesis and board-programming steps are
+demonstrated in the course, and Appendix~\ref{app:quartus} shows them for a reader with a board;
+your job is to get the VHDL right, and the testbench is how you confirm it. Short answers to the
+parts you work on paper are in Appendix~\ref{app:answers}; reference solutions to the VHDL are
+published in the companion repository, under \file{lectures/L07/solutions}. Try each exercise
+yourself before looking at either.
+\end{aside}
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{Timers by Hand}
+\label{c7:set:1}
+
+\exercise{Retargeting the timer by hand}{Paper, CircuitVerse}
+\label{c7:ex:1}
+Build a second timer by hand in CircuitVerse, following \secref{c7:a2}, but with a target count of
+\code{TICK_COUNT = 12} instead of the chapter's \code{10}.
+
+\begin{parts}
+  \item Retarget the comparator:
+    \begin{itemize}
+      \item Write \code{12} in 4-bit binary.
+      \item The four XNOR gates stay exactly where they are. Say which of their constant inputs
+        change, and to what.
+      \item State, in one sentence, why an equality comparator built from XNORs needs no gate
+        added, removed or rewired to compare against a different value.
+    \end{itemize}
+  \item Build it:
+    \begin{itemize}
+      \item Reuse your 4-bit counter and comparator from \secref{c7:a2}, changing only the
+        constants.
+      \item Set the clock period to \code{1000 ms} and confirm \code{timeout} fires once every
+        thirteen clock edges, for exactly one edge each time.
+    \end{itemize}
+  \item Now remove the clear, so that \code{timeout} no longer forces the counter back to
+    \code{0000}:
+    \begin{itemize}
+      \item Predict, before running it, how often \code{timeout} fires now.
+      \item Run it and confirm.
+      \item Explain the result in terms of the counter's own wraparound (\secref{c6:a1}).
+    \end{itemize}
+  \item Deliberately break the comparator: disconnect one XNOR's output from the AND gate and tie
+    that AND input high instead.
+    \begin{itemize}
+      \item Predict which counts now assert \code{timeout}, before simulating.
+      \item Confirm by stepping the counter through a full cycle.
+      \item This is what ``three of the four bits match'' looks like, and it is the most common way
+        a hand-drawn comparator goes wrong.
+    \end{itemize}
+\end{parts}
+\note[Tip] counting \code{0} through \code{12} inclusive is thirteen edges, not twelve.
+\Secref{c7:a1}'s note on \code{TICK_COUNT + 1} is the same off-by-one, and it is worth getting
+straight here, where you can count the edges by eye, rather than later at 50\,MHz.
+
+\exercise{Reading the timer module}{Paper}
+\label{c7:ex:2}
+Answer each of the following in one or two sentences, referring to the \code{timer} module in
+\secref{c7:a3}:
+
+\begin{parts}
+  \item Why is \code{timeout} a single-cycle pulse, rather than a signal that stays high once the
+    target count is reached?
+  \item While a running timer's \code{enable} input is held low, what happens to its internal
+    counter from one clock edge to the next: does it reset, pause, or keep counting?
+  \item Why does the \code{timer} take \code{reset_s2_n} (the synchronized reset) rather than the
+    raw \code{reset_n} as its reset input?
+  \item The CircuitVerse timer in Exercise~\ref{c7:ex:1} needed rewiring to change its target
+    count, while the VHDL module needs no edit at all. What replaces the rewiring, and at what point
+    is its value fixed?
+\end{parts}
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{Timers in VHDL}
+\label{c7:set:2}
+
+\exercise{Tick counts at 50\,MHz}{Paper}
+\label{c7:ex:3}
+The DE0-CV board's system clock is \code{50 MHz}. For each target below, calculate the
+\code{TICK_COUNT} generic you would pass to the \code{timer} module from \secref{c7:a3}:
+
+\begin{parts}
+  \item A \code{timeout} pulse once per second.
+  \item A \code{timeout} pulse every \code{250} ms.
+  \item A \code{timeout} pulse twenty times per second (\code{20 Hz}).
+\end{parts}
+\note[Tip] The relationship between a period and its tick count is:
+\[
+  \bool{TICK\_COUNT} = \bool{seconds} \times 50{,}000{,}000 - 1
+\]
+The \code{- 1} is the same off-by-one Exercise~\ref{c7:ex:1} turned on: the counter runs \code{0}
+through \code{TICK_COUNT} inclusive, so a period is \code{TICK_COUNT + 1} clock cycles, not
+\code{TICK_COUNT}.
+
+\exercise{Writing the timer}{VHDL, Paper}
+\label{c7:ex:4}
+Write the \code{timer} module itself, as an entity named \code{timer}.
+
+The course builds it live and \secref{c7:a3} prints it in full, so this is not a puzzle. Write it
+anyway, without copying: every design from here to the end of the book instantiates this module,
+including both capstones, and it is worth having built the thing you are about to reuse six times.
+
+The entity has one generic:
+
+\begin{booktable}{@{}p{5.2em}p{3.8em}p{5.4em}L@{}}
+  \thead{Generic} & \thead{Type} & \thead{Default} & \thead{Description} \\
+  \midrule
+  \code{TICK_COUNT} & \code{natural} & \code{50_000_000} & Ticks to count before a timeout. One
+    second at the DE0-CV's \code{50 MHz} clock, rounded: by Exercise~\ref{c7:ex:3}'s rule the
+    exact value is \code{49_999_999}, and 20\,ns of error in a second is not worth the less
+    readable constant. \\
+\end{booktable}
+
+\noindent and these ports:
+
+\begin{booktable}{@{}p{5.6em}p{4.8em}p{4.6em}L@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
+  \midrule
+  \code{clock} & in & \code{std_logic} & System clock. \\
+  \code{reset_s2_n} & in & \code{std_logic} & Active-low, already-synchronized reset.
+    Asynchronous: it clears the counter and \code{timeout} with no clock edge involved. \\
+  \code{enable} & in & \code{std_logic} & Timer enable. While low the counter \textbf{holds} its
+    value, and resumes from there rather than restarting. \\
+  \code{timeout} & out & \code{std_logic} & One-cycle pulse, asserted every
+    \code{TICK_COUNT + 1} cycles while enabled. \\
+\end{booktable}
+
+\noindent The architecture must:
+\begin{itemize}
+  \item Declare the internal counter as \code{natural range 0 to TICK_COUNT}, so the register is
+    sized by the generic rather than left unconstrained.
+  \item Use one process, sensitive to \code{clock} and \code{reset_s2_n}, following the
+    clocked-process template from \secref{c3:a6}.
+  \item Clear both the counter and \code{timeout} on reset, outside the clocked branch.
+  \item Drive \code{timeout} low unconditionally at the top of the clocked branch, and high only on
+    the edge that clears the counter. That default-then-override is what makes the pulse exactly
+    one cycle wide rather than two.
+\end{itemize}
+Then answer, in a sentence each:
+\begin{itemize}
+  \item \code{enable = '0'} must \textbf{pause} the counter, not clear it. Suppose you cleared it
+    instead. Predict what the reference testbench reports, and which of the two properties above it
+    is measuring when it does. Then run it and see. (Chapter~\ref{c8:ch}'s \code{fsm_led} depends
+    on the pause, which is why the testbench bothers.)
+  \item The counter counts \code{0} through \code{TICK_COUNT} inclusive, so a period is
+    \code{TICK_COUNT + 1} cycles. Where in your code is that ``+ 1'' actually written? It is not a
+    literal anywhere.
+  \item \Secref{c7:a2}'s hand-drawn \code{timeout} is a combinational decode of the count; yours is
+    registered. Both have the same period. Which cycle does each one fire on, and why does the
+    difference matter for anything downstream that samples \code{timeout}?
+\end{itemize}
+
+\modulefigure{timer}
+
+\selfcheck name your entity \code{timer}, with generic \code{TICK_COUNT} (\code{natural}, default
+\code{50_000_000}), inputs \code{clock}, \code{reset_s2_n}, \code{enable}, and output
+\code{timeout}, declared in that order; its testbench is in \file{exercises/timer}. It runs three
+full periods, so a one-shot passes nothing, and pauses mid-count to confirm the count resumed rather
+than restarted.
+
+\textbf{Keep this file.} Exercise~\ref{c7:ex:5} below reuses it, so does \code{walking_led} in
+Exercise~\ref{c7:ex:6}, and so do both Chapter~\ref{c8:ch} capstones. Every later exercise that
+needs a timer asks you to copy this one in.
+
+\exercise{A one-second blinker}{VHDL, Paper}
+\label{c7:ex:5}
+Write an entity named \code{blinker} that blinks an LED on and off once per second, by reusing the
+\code{timer} module you just wrote rather than counting clock cycles itself.
+
+The entity has one generic:
+
+\begin{booktable}{@{}p{5.2em}p{3.8em}p{5.4em}L@{}}
+  \thead{Generic} & \thead{Type} & \thead{Default} & \thead{Description} \\
+  \midrule
+  \code{TICK_COUNT} & \code{natural} & \code{25_000_000} & A half-second at the DE0-CV's
+    \code{50 MHz} clock. Expose it as a generic rather than hard-coding the count, so a testbench
+    can shorten the blink; the FPGA build just uses the default. \\
+\end{booktable}
+
+\noindent and these ports:
+
+\begin{booktable}{@{}p{5.6em}p{4.8em}p{4.6em}L@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
+  \midrule
+  \code{clock} & in & \code{std_logic} & System clock. \\
+  \code{reset_n} & in & \code{std_logic} & Active-low reset, raw from the outside world.
+    Asynchronous: assert it and \code{led} goes out immediately, without waiting for a clock
+    edge. \\
+  \code{led} & out & \code{std_logic} & Cleared to \code{'0'} while the reset is asserted, and left
+    there until the first timeout after the reset is released. \\
+\end{booktable}
+
+\noindent Note that this entity takes the \textbf{raw} \code{reset_n} rather than an
+already-synchronized \code{reset_s2_n}. Synchronizing it is part of the exercise, and it is what
+\secref{c4:a5} means by ``exactly one module in a design is the exception'': here that module is
+\code{blinker} itself.
+
+The architecture must:
+\begin{itemize}
+  \item Instantiate your \code{reset_sync} from Chapter~4's Exercise~\ref{c4:ex:8}, and use its
+    \code{reset_s2_n} output as the reset for everything inside.
+  \item Instantiate the \code{timer} module from \secref{c7:a3}:
+    \begin{itemize}
+      \item Pass your own \code{TICK_COUNT} generic straight through to the timer's
+        \code{TICK_COUNT}.
+      \item Hold its \code{enable} input high.
+    \end{itemize}
+  \item Toggle \code{led} in a synchronous process whenever the timer's \code{timeout} pulse fires.
+\end{itemize}
+Do not reimplement the counting logic, or the synchronizer, yourself.
+
+Instead:
+\begin{itemize}
+  \item Reuse \code{timer} and \code{reset_sync} unchanged, via a \code{generic map} and
+    \code{port map}, following the composition pattern in \secref{c7:a4}.
+  \item Explain why a \textbf{half}-second timer period produces a \textbf{one}-second blink cycle
+    (one full on-then-off period).
+\end{itemize}
+Then answer, in a sentence each:
+\begin{itemize}
+  \item The LED must be off during reset, and the testbench checks that it goes off with no clock
+    edge in between. Which half of the assert-async-release-sync pattern does that check, and which
+    half does it not?
+  \item Your \code{timer} is reset by \code{reset_s2_n}, two edges after \code{reset_n} is
+    released. What would go wrong if you fed it the raw \code{reset_n} instead? Name the failure,
+    not just the rule.
+\end{itemize}
+
+\modulefigure{blinker}
+
+\selfcheck name your entity \code{blinker}, with generic \code{TICK_COUNT} (\code{natural}, default
+\code{25_000_000}), inputs \code{clock}, \code{reset_n}, and output \code{led}, declared in that
+order; its testbench is in \file{exercises/blinker}. \textbf{Copy your own \file{reset_sync.vhd}
+and \file{timer.vhd} into that directory} before you build; neither is shipped there, because you
+wrote both. It overrides \code{TICK_COUNT} with a small value and checks that the LED toggles
+repeatedly, holds for exactly one timer period between toggles, and that the first toggle arrives
+late by your synchronizer's two edges (see \secref{c2:app:c}):
+
+\begin{shell}
+cd lectures/L07/exercises/blinker
+cp ../../../L04/exercises/reset_sync/reset_sync.vhd .   # the two you wrote yourself
+cp ../timer/timer.vhd .
+ghdl -a --std=93 reset_sync.vhd timer.vhd blinker.vhd blinker_tb.vhd
+ghdl -e --std=93 blinker_tb
+ghdl -r --std=93 blinker_tb --assert-level=error --stop-time=10ms
+\end{shell}
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{The Walking LED}
+\label{c7:set:3}
+
+A single lit LED walking along a row, one position per timer tick, started and stopped with a
+button. The course builds it live, and \secref{c7:a5} writes it up.
+
+This is the payoff of the last four chapters, and it writes almost no logic of its own: three
+modules, two of them carried unchanged from Chapter~\ref{c4:ch} and one written in this chapter,
+composed. Exercise~\ref{c7:ex:6} builds it, and Exercises~\ref{c7:ex:7} and~\ref{c7:ex:8} modify
+what you built.
+
+\exercise{The walking LED}{VHDL, Paper}
+\label{c7:ex:6}
+Write an entity named \code{walking_led}.
+
+Like the \code{timer} of Exercise~\ref{c7:ex:4}, the course builds it live and \secref{c7:a5}
+prints it in full, so this is not a puzzle either. Write it anyway, without copying: composing
+three modules you wrote yourself is the whole point of the exercise, and the capstones in
+Chapter~\ref{c8:ch} ask for it again at twice the size.
+
+The entity has two generics:
+
+\begin{booktable}{@{}p{5.2em}p{3.8em}p{5.4em}L@{}}
+  \thead{Generic} & \thead{Type} & \thead{Default} & \thead{Description} \\
+  \midrule
+  \code{LED_COUNT} & \code{natural} & \code{8} & How many LEDs the bit walks along. The row is this
+    wide, and the walk wraps after this many steps. \\
+  \code{TICK_COUNT} & \code{natural} & \code{25_000_000} & Passed straight through to your
+    \code{timer}, so the bit moves one position per timer period: a half-second step at the
+    DE0-CV's \code{50 MHz} clock. \\
+\end{booktable}
+
+\noindent and these ports:
+
+\begin{booktable}{@{}p{4.6em}p{4.8em}p{10.8em}L@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
+  \midrule
+  \code{clock} & in & \code{std_logic} & System clock. \\
+  \code{reset_n} & in & \code{std_logic} & Active-low reset, raw from the outside world.
+    Synchronizing it is your job, as it was in \code{blinker}. \\
+  \code{button_n} & in & \code{std_logic} & Active-low push button, raw. Each press starts or stops
+    the walk. \\
+  \code{led} & out & \code{std_logic_vector(}\allowbreak\code{LED_COUNT-1 downto 0)} & The LED
+    row. Exactly one bit is lit at any time; on reset it is bit \code{0}. \\
+\end{booktable}
+
+\noindent The architecture composes three modules you have already written, and adds two
+processes:
+\begin{itemize}
+  \item Instantiate your \textbf{\code{reset_sync}}, and use its \code{reset_s2_n} as the reset for
+    everything else in the design, including the two instances below.
+  \item Instantiate your \textbf{\code{button_sync}} with \code{generic map(1)}, for a one-cycle
+    pulse per press. Its button ports are \code{COUNT}-bit vectors while \code{button_n} here is a
+    scalar, so bridge the width with a one-element \code{std_logic_vector(0 downto 0)} in each
+    direction. \Secref{c7:a5} shows this.
+  \item Instantiate your \textbf{\code{timer}} with your own \code{TICK_COUNT}, driving its
+    \code{enable} from the shift-enable flag below and taking its \code{timeout} as the shift tick.
+  \item A process toggling \textbf{\code{shift_enable}} on each button pulse, cleared to \code{'0'}
+    on reset. The walk therefore starts stopped.
+  \item A process holding the \textbf{shift register} that drives \code{led}: on reset, load a
+    single lit bit at position \code{0} and clear the rest; on each timer \code{timeout}, rotate one
+    step toward the MSB, wrapping the top bit back around into bit \code{0}. That is a PISO
+    register (\secref{c6:a4}) with its own serial output wired back to its serial input, which is
+    what turns a one-shot shift-out into an endless walk.
+\end{itemize}
+Then answer, in a sentence each:
+\begin{itemize}
+  \item \code{shift_enable} drives the timer's \code{enable}, so stopping the walk stops the timer
+    too. Exercise~\ref{c7:ex:4} made you show that \code{enable} \textbf{pauses} the count rather
+    than clearing it. What does a reader see on the board, on the press that restarts the walk, if
+    your timer clears instead?
+  \item \code{button_sync} is instantiated with \code{COUNT = 1} here and with \code{COUNT = 2} in
+    Chapter~\ref{c8:ch}'s \code{fsm_led}, from the same file with no edit. What would you have had
+    to write instead if the width were fixed in the module rather than passed as a generic?
+\end{itemize}
+
+\modulefigure{walking_led}
+
+\selfcheck name your entity \code{walking_led}, with generics \code{LED_COUNT} (\code{natural},
+default \code{8}) and \code{TICK_COUNT} (\code{natural}, default \code{25_000_000}), inputs
+\code{clock}, \code{reset_n}, \code{button_n}, and output \code{led}, declared in that order; its
+testbench is in \file{exercises/walking_led}. It overrides the generics (\code{LED_COUNT = 4},
+\code{TICK_COUNT = 3}) so a full lap takes a handful of clock cycles rather than two seconds, and it
+checks the reset pattern, that nothing moves before the first press, and that the shift count over a
+fixed window matches the pace the timer sets. Copy in the three modules it composes first:
+
+\begin{shell}
+cd lectures/L07/exercises/walking_led
+cp ../../../L04/exercises/reset_sync/reset_sync.vhd .   # the three you wrote yourself
+cp ../../../L04/exercises/button_sync/button_sync.vhd .
+cp ../timer/timer.vhd .
+ghdl -a --std=93 reset_sync.vhd button_sync.vhd timer.vhd \
+                 walking_led.vhd walking_led_tb.vhd
+ghdl -e --std=93 walking_led_tb
+ghdl -r --std=93 walking_led_tb --assert-level=error --stop-time=10ms
+\end{shell}
+
+\exercise{Changing the walking LED}{VHDL, Paper}
+\label{c7:ex:7}
+Make the following changes one at a time, re-running the testbench after each. Parts \textbf{a)}
+and \textbf{b)} change only the testbench's constants --- that they need no edit to your
+\file{walking_led.vhd} at all is the point of them. Part \textbf{c)} is the one that touches the
+module.
+
+\begin{parts}
+  \item Change the walking speed:
+    \begin{itemize}
+      \item Edit the \code{TICK_COUNT} constant in the \textbf{testbench} from \code{3} to
+        \code{6}.
+      \item It should still pass, and this time because the testbench adapts with you: its
+        observation window is a fixed \code{PULSES * 6} cycles, and it derives the shift count it
+        expects from \code{TICK_COUNT}, one shift per \code{TICK_COUNT + 1} cycles.
+      \item Now find where that adaptation stops meaning anything. Keep raising \code{TICK_COUNT}
+        past the window length and work out what the expected count becomes, and what the check is
+        then actually proving. A test that passes for the wrong reason is worth being able to
+        recognize.
+      \item Then explain why changing the tick count cannot break the \emph{design}, only slow it
+        down.
+    \end{itemize}
+  \item Change the width:
+    \begin{itemize}
+      \item Edit the testbench's \code{LED_COUNT} constant from \code{4} to \code{8}.
+      \item It should still pass, with no change to your \file{walking_led.vhd} at all. Explain
+        what the module would have needed to look like for this to require an edit.
+    \end{itemize}
+  \item Load two lit bits on opposite sides of the register on reset (e.g.\ \code{"10001000"} for
+    \code{LED_COUNT = 8}), and let them walk in lockstep:
+    \begin{itemize}
+      \item Identify the single line in your \file{walking_led.vhd} you need to change.
+      \item Before running anything, \textbf{predict} what the reference testbench will report.
+      \item Then run it and see. Explain the result: is the design wrong, or is the testbench
+        asserting something that is no longer the specification?
+    \end{itemize}
+\end{parts}
+\note[Tip] Both \code{LED_COUNT} and \code{TICK_COUNT} are generics, so parts \textbf{a)} and
+\textbf{b)} need no change to the module's body at all. That is the entire point of a generic: one
+module, many sizes, no edits.
+
+\exercise{Reversing the walk}{VHDL, Paper}
+\label{c7:ex:8}
+The current design only ever walks in one direction (toward the MSB, wrapping the top bit back
+around to the bottom). Modify your \file{walking_led.vhd} so that a \textbf{second} button reverses
+the walking direction.
+
+\begin{parts}
+  \item Add a second, synchronized button input:
+    \begin{itemize}
+      \item Route it through the same \code{button_sync} instance, passing \code{2} for its
+        \code{COUNT} generic (\code{generic map(2)}, positionally, as everywhere else in this
+        book).
+    \end{itemize}
+  \item Add a \code{direction} signal:
+    \begin{itemize}
+      \item Toggle it on the new button's edge, exactly the way \code{shift_enable} is toggled by
+        the first button.
+    \end{itemize}
+  \item Make the rotation in \code{SHIFT_PROCESS} depend on \code{direction}:
+    \begin{itemize}
+      \item When \code{direction = '0'}, rotate toward the MSB (the book's convention from
+        \secref{c6:a2}, and what you wrote in Exercise~\ref{c7:ex:6}):
+\begin{vhdlcode}
+shift_reg <= shift_reg(LED_COUNT-2 downto 0) & shift_reg(LED_COUNT-1);
+\end{vhdlcode}
+      \item When \code{direction = '1'}, rotate the other way, toward bit 0:
+\begin{vhdlcode}
+shift_reg <= shift_reg(0) & shift_reg(LED_COUNT-1 downto 1);
+\end{vhdlcode}
+    \end{itemize}
+    This is the one place in the book where a shift register deliberately runs against the
+    convention: reversing direction is the entire point of the exercise. Note that the
+    second expression is exactly the mirror image \secref{c6:a2} warns you to watch for in other
+    people's code.
+  \item Your entity's ports have now changed: \code{button_n} is a two-bit vector rather than a
+    single bit.
+    \begin{itemize}
+      \item Explain why \file{walking_led_tb.vhd} can no longer be used against your version, and
+        what precisely GHDL will complain about when you try.
+      \item This is the ordinary cost of changing an interface, and it is worth feeling once: a
+        testbench is written against a specific entity, and widening a port breaks every
+        instantiation of it, including the ones you did not write.
+      \item Describe, in prose, the sequence of presses you would use to convince yourself the
+        design works, and what you would expect the LEDs to do at each step. That sequence is
+        exactly what a testbench for the new entity would have to drive.
+    \end{itemize}
+\end{parts}

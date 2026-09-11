@@ -1,0 +1,467 @@
+% Sections 2.1 to 2.7, from lectures/L02/appendix/a_larger_networks.md: one section per part,
+% A.1 to A.7.
+
+\section{Karnaugh Maps: From Truth Table to Minimized Gate Network}
+\label{c2:a1}
+Reading a sum-of-products equation straight off a truth table, the way \secref{c1:a2} did, always
+works but rarely gives the smallest network: every \code{1} row becomes its own AND-term, even when
+several rows share most of their inputs and could be combined.
+
+A \textbf{Karnaugh map} (K-map) makes those shared patterns visible by hand, for functions of 2 to 4
+variables, with no formal Boolean-algebra manipulation. One worked example follows; further practice
+is in \secref{c2:sec:exercises}, and classical minimization theory (don't-cares, Quine--McCluskey)
+is out of scope.
+
+The idea is to lay the truth table out as a grid rather than a list, ordering the header labels so
+every cell differs from each horizontal and vertical neighbour in exactly one input value, including
+around the left/right and top/bottom edges. That ordering is \textbf{Gray code}: for two bits,
+\code{00, 01, 11, 10}, where only one bit changes at each step, including from the last entry back
+to the first.
+
+Then:
+\begin{enumerate}
+  \item Write a \code{1} in every cell where the output is \code{1}, and leave the rest blank.
+  \item Draw rectangular groups around the \code{1}s:
+    \begin{itemize}
+      \item Every group must be a rectangle whose width and height are each a power of 2 (1, 2 or
+        4), so its size is a power of 2 as well.
+        \begin{itemize}
+          \item a group of 4 is therefore either a $1\times4$ line or a $2\times2$ block, and both
+            are allowed.
+          \item cells that touch only at a corner are not a rectangle, so they cannot be grouped.
+        \end{itemize}
+      \item Groups may overlap, and may wrap around an edge of the grid.
+    \end{itemize}
+  \item Make every group as large as possible, and cover every \code{1} at least once. A group of 1
+    keeps all its inputs in the term, a group of 2 drops one, a group of 4 drops two, and so on.
+    \begin{itemize}
+      \item Then use as few groups as will do it: drop any group whose cells are every one of them
+        already covered by another. Nothing above forbids a redundant group, and a redundant group
+        is a redundant AND-term in the answer, correct but not minimal.
+    \end{itemize}
+  \item For each group, keep only the input(s) that hold the same value in every cell of that
+    group, dropping the rest, and write that as one AND-term:
+    \begin{itemize}
+      \item write a kept input directly if that constant value is \code{1}, and primed if it is
+        \code{0}.
+      \item so a group covering only cells where \code{B = 0} contributes the term \code{B'}.
+    \end{itemize}
+  \item \code{X} is the OR of all the group terms.
+\end{enumerate}
+
+\subsection{Worked example}
+\label{c2:kmapexample}
+Three inputs \code{A}, \code{B}, \code{C}, one output \code{X}:
+
+\begin{narrowtable}{@{}cccc@{}}
+  \thead{A} & \thead{B} & \thead{C} & \thead{X} \\
+  \midrule
+  0 & 0 & 0 & 0 \\
+  0 & 0 & 1 & 1 \\
+  0 & 1 & 0 & 0 \\
+  0 & 1 & 1 & 1 \\
+  1 & 0 & 0 & 0 \\
+  1 & 0 & 1 & 1 \\
+  1 & 1 & 0 & 1 \\
+  1 & 1 & 1 & 1 \\
+\end{narrowtable}
+
+\noindent Lay it out with \code{AB} in Gray code down the rows and \code{C} across the columns,
+filling in a \code{1} wherever \code{X = 1} (Figure~\ref{c2:fig:karnaugh_filled}).
+
+\bookfigure{karnaugh_filled}{The Karnaugh map for \code{X}, filled in from the truth table:
+\code{AB} in Gray code down the rows, \code{C} across the columns.}{c2:fig:karnaugh_filled}
+
+\noindent The entire \code{C = 1} column is four \code{1}s, a group of 4. Every cell shares
+\code{C = 1} and nothing else is constant (\code{A} and \code{B} both vary), so it reduces to the
+single-variable term \code{C}:
+
+\bookfigure{karnaugh_group_c}{The same map with the four-cell \code{C = 1} group marked, which
+reduces to the term \code{C}.}{c2:fig:karnaugh_group_c}
+
+\noindent One \code{1} is still uncovered, on the \code{AB = 11} row. Group it with its neighbour to
+the right, which the \code{C} group already covers. Every cell in the pair shares \code{A = 1} and
+\code{B = 1}, and \code{C} varies, so it reduces to \code{AB}:
+
+\bookfigure{karnaugh_groups}{The same map with the two-cell \code{AB = 11} group added, overlapping
+the \code{C} group in one cell.}{c2:fig:karnaugh_groups}
+
+\noindent Every \code{1} is now covered; the \code{AB = 11, C = 1} cell is in both groups, and
+overlap is fine. Summing gives:
+
+\begin{console}
+X = AB + C
+\end{console}
+
+\noindent Reading the truth table directly, as Chapter~\ref{c1:ch} did, would have given five
+AND-terms, one per \code{1} row. The K-map found an equivalent two-term equation, which is the entire
+value of doing this by hand.
+
+\subsection{Realizing the network}
+\label{c2:kmapnetwork}
+\code{X = AB + C} is two gates: an \code{AND} computing \code{AB}, feeding an \code{OR} whose other
+input is \code{C}.
+
+\bookimage{0.55}{lectures/L02/appendix/images/net.png}{The gate network for the minimized
+expression \code{X = AB + C}: an \code{AND} gate feeding an \code{OR}, built in
+CircuitVerse.}{c2:fig:net}
+
+\noindent The course builds this network by hand in CircuitVerse, live; build it yourself exactly as
+you built \code{or_gate}'s in Chapter~\ref{c1:ch}. \Secref{c2:a2} translates it into VHDL.
+
+\section{Translating the Karnaugh-Map Network into VHDL}
+\label{c2:a2}
+\code{X = AB + C} translates straight into VHDL. Three inputs, one output:
+
+\begin{vhdlcode}
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity gate_network is
+    port(a, b, c: in std_logic;
+         x      : out std_logic);
+end entity;
+\end{vhdlcode}
+
+\noindent The architecture uses an internal signal \code{ab} to hold the \code{AND} gate's output,
+mirroring the two-gate network one-for-one:
+
+\needspace{12\baselineskip}
+\begin{vhdlcode}
+architecture behaviour of gate_network is
+signal ab: std_logic;
+begin
+    -- AND gate: AB.
+    ab <= a and b;
+
+    -- OR gate: AB + C.
+    x <= ab or c;
+end architecture;
+\end{vhdlcode}
+
+\noindent Without the intermediate signal this collapses to \code{x <= (a and b) or c;}. Both are
+equally valid and synthesize to the same hardware; use whichever is more readable for the network at
+hand.
+
+The buildable version, \file{lectures/L02/gate_network/gate_network.vhd}, uses the collapsed form,
+since at two gates there is nothing to gain from naming the intermediate. It is printed in full
+below; set it beside the version above and satisfy yourself they describe the same circuit. That is
+the claim this section is making, and it costs nothing to check.
+
+\vhdlfile{lectures/L02/gate_network/gate_network.vhd}
+
+To run it on hardware, assign the ports to switches and an LED with the DE0-CV's pin planner
+(Appendix~\ref{app:quartus}). Nothing here depends on specific pin numbers.
+
+\section{\code{std_logic_vector}: More Than One Wire}
+\label{c2:a3}
+Everything so far has been \code{std_logic}, one wire carrying one bit. Bundling several wires under
+one name is what \code{std_logic_vector} is for.
+
+\begin{vhdlcode}
+signal count: std_logic_vector(3 downto 0);
+\end{vhdlcode}
+
+\noindent That declares four wires: \code{count(3)} down to \code{count(0)}. The range is
+\code{3 downto 0} rather than \code{0 to 3} so the leftmost bit is the most significant, the way you
+would write the number on paper. This book uses \code{downto} everywhere, and so does almost all the
+VHDL you will meet.
+
+A vector is a port type like any other:
+
+\begin{vhdlcode}
+entity display is
+    port(number: in  std_logic_vector(3 downto 0);
+         hex   : out std_logic_vector(6 downto 0));
+end entity;
+\end{vhdlcode}
+
+\subsection{Values}
+\label{c2:values}
+A single bit takes single quotes, a vector double quotes:
+
+\begin{vhdlcode}
+x     <= '1';                -- std_logic: one bit
+count <= "1010";             -- std_logic_vector(3 downto 0): four bits
+count <= (others => '0');    -- every bit '0', whatever the width
+\end{vhdlcode}
+
+\noindent The last is an \emph{aggregate}: \code{(others => '0')} means ``all the remaining bits are
+\code{'0'}'', and since none were named individually, that is all of them. It keeps working when the
+width changes, and it appears throughout the rest of the book.
+
+\subsection{Indexing and slicing}
+\label{c2:slicing}
+One bit out of a vector is a \code{std_logic}; a contiguous run is a \emph{slice}, itself a vector:
+
+\begin{vhdlcode}
+carry     <= count(3);
+high_half <= input(7 downto 4);
+\end{vhdlcode}
+
+\noindent Slicing is how one wide port feeds several narrower ones, which is what \secref{c2:a6}'s
+two-digit display does with its eight switch inputs.
+
+One detail is not what a software engineer expects. \code{input(7 downto 4)} has the index range
+\code{7 downto 4}, not \code{3 downto 0}. Connected to a port declared
+\code{std_logic_vector(3 downto 0)}, the two are matched \textbf{by position, left to right}, not by
+index number: \code{input(7)} drives bit 3, \code{input(6)} drives bit 2, and so on. The lengths
+have to match. The numbering does not.
+
+\subsection{A vector is a bundle of bits, not a number}
+\label{c2:bundle}
+\code{count <= "1010"} does not make \code{count} equal ten. \code{std_logic_vector} says nothing
+about what the bits \emph{mean}, so it offers only the operations that make sense for a bundle of
+wires: the logical operators applied bit by bit (\code{a and b}, \code{not a}, \code{a xor b}),
+comparison (\code{count = "1010"}), and concatenation (\code{"10" & "11"} is \code{"1011"}).
+
+Arithmetic is not on that list. \code{count + 1} will not compile, because nothing has said whether
+those four wires are an unsigned number, a signed one, or four unrelated signals.
+
+This book does not work around that with a numeric vector type. Anything counted is a plain integer
+with a range:
+
+\begin{vhdlcode}
+signal count: natural range 0 to 9;
+\end{vhdlcode}
+
+\noindent which you can add to and compare directly, and which synthesis turns into exactly the
+flip-flops the range needs. Vectors stay what they are: bundles of wires, for things that really are
+bundles of wires, like eight switches or seven display segments.
+
+The two worlds meet only at a boundary, and the conversions appear where they are needed:
+
+\begin{vhdlcode}
+count_v <= std_logic_vector(to_unsigned(count, 4));   -- integer to vector
+count   <= to_integer(unsigned(count_v));             -- vector to integer
+\end{vhdlcode}
+
+\noindent Both come from \code{ieee.numeric_std}, which is why some files add a third \code{use}
+clause.
+
+\section{Multiplexers}
+\label{c2:a4}
+A \textbf{multiplexer} (``mux'') routes exactly one of several data inputs to a single output, chosen
+by a separate set of \textbf{selector} inputs. An \code{N}-to-1 mux has \code{N} data inputs and
+\code{ceil(log2(N))} selector bits.
+
+The simplest case, a 2-to-1 mux with inputs \code{A}, \code{B}, selector \code{S} and output
+\code{X}:
+
+\begin{narrowtable}{@{}cc@{}}
+  \thead{S} & \thead{X} \\
+  \midrule
+  0 & B \\
+  1 & A \\
+\end{narrowtable}
+
+\noindent As a Boolean equation, \code{X = S'B + SA}: for every input combination exactly one
+AND-term is active, and that term's data input passes through.
+
+Larger muxes are the same idea with more selector bits, though \emph{which} data input a given
+selector value names is a convention that changes from part to part, and has to be read off the
+specification rather than assumed. The 8-to-1 below is the opposite way round from the 2-to-1
+above: there \code{0} names the second input, here \code{000} names the first. An 8-to-1 mux with
+data inputs \code{A}--\code{H} and selector \code{S[2:0]}:
+
+\begin{narrowtable}{@{}cc@{}}
+  \thead{S[2:0]} & \thead{X} \\
+  \midrule
+  000 & A \\
+  001 & B \\
+  010 & C \\
+  011 & D \\
+  100 & E \\
+  101 & F \\
+  110 & G \\
+  111 & H \\
+\end{narrowtable}
+
+\noindent Read into sum-of-products one term per row, the \code{000} row contributes
+\code{A*S2'S1'S0'} and the rest follow the same shape, each gating its data input with the selector
+combination that selects it:
+
+\begin{console}
+X = AS2'S1'S0' + BS2'S1'S0 + ... + HS2S1S0
+\end{console}
+
+\noindent Worth writing out once by hand, not worth memorizing. The pattern is the point, and it is
+the same at any size.
+
+As gates: one 4-input \code{AND} per data input (the data bit plus all three selector bits),
+inverting selector bits as needed, with all eight \code{AND} outputs summed by a tree of \code{OR}
+gates (Figure~\ref{c2:fig:mux8}).
+
+\bookimage[htbp]{0.85}{lectures/L02/appendix/images/mux_8to1.png}{The 8-to-1 multiplexer as gates: eight
+4-input \code{AND} gates, each gating one data input with the selector combination that selects it,
+feeding a tree of \code{OR} gates.}{c2:fig:mux8}
+
+\noindent This is a real building block. The ATmega328P (the chip on an Arduino Uno/Nano) uses one
+internally so its analog-capable pins, plus an internal bandgap reference and a temperature sensor,
+can share a single analog-to-digital converter, selected by the four \code{MUX} bits of its
+\code{ADMUX} register.
+
+\section{Multiplexers in VHDL: \code{process} and \code{case}}
+\label{c2:a5}
+Every statement so far has been \textbf{concurrent}: a standing description of a wire, all active at
+once. A multiplexer is the first circuit that is awkward to write that way, and needs two new
+constructs:
+\begin{itemize}
+  \item a \textbf{\code{process}}, a block whose contents run sequentially, top to bottom, like
+    ordinary code. It re-runs whenever any signal in its \textbf{sensitivity list} changes, and
+    from the architecture's point of view it is still just one more concurrent statement. Every
+    process in this book has this shape; Chapter~\ref{c3:ch} reuses it for clocked logic, with the
+    clock in the sensitivity list instead of the inputs being decoded.
+  \item a \textbf{\code{case} statement}, VHDL's \code{switch}. Like \code{if} and \code{for} it is
+    a \emph{sequential} statement, legal only inside a process (or a subprogram, which this book
+    does not use), and every value the selector can take must be covered, which
+    \code{when others} guarantees.
+\end{itemize}
+``Pick one of several inputs based on a selector'' \emph{is} a \code{case} statement, almost word for
+word. The 2-to-1 mux from \secref{c2:a4}:
+
+\needspace{11\baselineskip}
+\begin{vhdlcode}
+MUX_PROCESS: process(a, b, sel) is
+begin
+    case (sel) is
+        when '0'    => x <= b;
+        when '1'    => x <= a;
+        when others => x <= '0';
+    end case;
+end process;
+\end{vhdlcode}
+
+\noindent Two points from that:
+\begin{itemize}
+  \item Single-bit values take single quotes, \code{'0'}/\code{'1'}, as opposed to the double quotes
+    used for vectors like \code{"000"}.
+  \item \code{when others} is required rather than defensive. VHDL insists a \code{case} cover every
+    value of its selector's type, and \code{std_logic} has nine (\secref{c1:a4}), so \code{'0'} and
+    \code{'1'} alone never make one exhaustive. This is a language rule, not a claim about the wire:
+    a synthesized net carries a \code{0} or a \code{1} and nothing else, and the other seven values
+    are the simulator's, where a signal sitting at \code{'U'} or \code{'X'} is a bug rather than a
+    level.
+\end{itemize}
+
+\subsection{Worked example: the 8-to-1 mux}
+\label{c2:mux8}
+Same shape with a 3-bit selector and eight branches, one per row of \secref{c2:a4}'s truth table.
+The data inputs \code{A}--\code{H} become the vector \code{inputs(7 downto 0)}, with \code{A} as
+\code{inputs(7)} down to \code{H} as \code{inputs(0)}, so selector \code{"000"} routes
+\code{inputs(7)} and \code{"111"} routes \code{inputs(0)}.
+
+The buildable module is \file{lectures/L02/mux_8to1/mux_8to1.vhd}:
+
+\vhdlfile{lectures/L02/mux_8to1/mux_8to1.vhd}
+
+Compare it against \secref{c2:a4}'s eight-term equation for the same circuit. The equation describes
+the gates; the \code{case} describes the \emph{intent} and lets the synthesis tool produce the gates.
+Both are correct and both synthesize to the same hardware. That gap, between describing structure
+and describing behaviour, is most of what a hardware description language buys you.
+
+\section{Building a Design from Submodules}
+\label{c2:a6}
+Everything so far has been one entity with one architecture. That stops being enough the moment a
+design needs the same block twice.
+
+The DE0-CV has six 7-segment displays, and you want to drive two, each showing one hexadecimal
+digit. The logic turning a 4-bit number into seven segment signals is the same for both. You could
+write it twice inside one architecture and nothing would stop you, but the second copy is a
+liability: every fix has to be made in both, and the day they drift apart is the day you lose an
+evening working out which one is wrong.
+
+Write the block once, as its own entity, and \emph{instantiate} it twice.
+
+\subsection{The submodule}
+\label{c2:submodule}
+An ordinary module. Nothing about it says ``I am a submodule'':
+
+\begin{vhdlcode}
+entity display is
+    port(number: in  std_logic_vector(3 downto 0);
+         hex   : out std_logic_vector(6 downto 0));
+end entity;
+\end{vhdlcode}
+
+\noindent Whether it ends up as a whole design or one piece of a larger one is decided by whoever
+instantiates it, not by the module.
+
+\subsection{Instantiating it}
+\label{c2:instantiate}
+With \code{entity work.<name>}, inside another architecture:
+
+\begin{vhdlcode}
+entity hex_display is
+    port(input     : in  std_logic_vector(7 downto 0);
+         hex1, hex0: out std_logic_vector(6 downto 0));
+end entity;
+
+architecture structure of hex_display is
+begin
+    display1: entity work.display
+        port map(input(7 downto 4), hex1);
+
+    display0: entity work.display
+        port map(input(3 downto 0), hex0);
+end architecture;
+\end{vhdlcode}
+
+\begin{itemize}
+  \item \code{display1} and \code{display0} are \textbf{instance labels}, naming the two copies.
+    They must be unique within the architecture, and they are not the module's name: both instances
+    are \code{display}.
+  \item \code{entity work.display} selects the module. \code{work} is the library your analyzed
+    files land in by default, in GHDL and Quartus alike.
+  \item \code{port map(...)} connects the instance's ports to signals in the enclosing architecture,
+    \textbf{in the order that entity declares them}. \code{display} declares \code{number} then
+    \code{hex}, so the first item drives \code{number} and the second is driven by \code{hex}.
+  \item \code{input(7 downto 4)} is a \textbf{slice}, which the instance sees as a
+    \code{std_logic_vector(3 downto 0)}.
+\end{itemize}
+Note what \code{hex_display}'s architecture does \emph{not} contain: any logic. It is wiring and
+nothing else. Every gate in the finished design comes from the two \code{display} instances.
+
+\subsection{Positional and named association}
+\label{c2:association}
+The \code{port map} above is \textbf{positional}, matching ports by order. VHDL also allows
+\textbf{named} association, which you will meet in other people's code:
+
+\begin{vhdlcode}
+display1: entity work.display
+    port map(number => input(7 downto 4), hex => hex1);
+\end{vhdlcode}
+
+\noindent The two are equivalent. This book uses positional everywhere, which means an entity's port
+declaration order is something you have to get right. That is not a formality: it is exactly what
+the testbenches you are given rely on, which is why every exercise's self-check line spells out its
+ports \emph{in order}.
+
+\subsection{What this costs in hardware}
+\label{c2:cost}
+Nothing surprising. Instantiating a module twice puts two copies of its gates on the FPGA, exactly
+as writing the logic twice would. The saving is in the source, not the silicon: one description, one
+place to fix, and a design you can read.
+
+\section{Checking Your Work}
+\label{c2:a7}
+Every VHDL module you write for an exercise comes with a \textbf{self-checking testbench}: a small
+VHDL file that drives your inputs, checks your outputs, and tells you which case failed.
+Chapter~\ref{c1:ch}'s Exercise~\ref{c1:ex:2} already shipped one, and \secref{c1:a5} gave you the
+three commands that run it.
+
+You do not write testbenches in this book. Running them is enough to verify every exercise on your
+own laptop, with no FPGA board.
+
+\Secref{c2:app:c} is the full guide: what a testbench is and why its entity has no ports, the
+analyze $\to$ elaborate $\to$ run sequence, how to read a failed assertion, and how your module's
+\textbf{port order} has to match what the testbench expects.
+
+Run one now, against this chapter's worked example:
+
+\begin{shell}
+cd lectures/L02/gate_network
+ghdl -a --std=93 gate_network.vhd gate_network_tb.vhd
+ghdl -e --std=93 gate_network_tb
+ghdl -r --std=93 gate_network_tb --assert-level=error --stop-time=10ms
+\end{shell}

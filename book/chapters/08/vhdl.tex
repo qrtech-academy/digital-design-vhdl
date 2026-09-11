@@ -1,0 +1,249 @@
+% Sections 8.4 to 8.6, from lectures/L08/appendix/a_state_machines.md, parts A.4 to A.6: the
+% machine in VHDL, Mealy machines, and the board. The two worked examples, fsm_led and
+% seq_detect_mealy, are printed in full at the end of the subsections that introduce them.
+
+\section{The Same Machine in VHDL}
+\label{c8:a4}
+That was the last time in this book you will design a machine by hand. Everything from here writes
+it directly in VHDL, which is worth having earned rather than started with: the synthesis tool does
+exactly what you just did on paper, and when a state machine misbehaves you will be debugging the
+diagram, not the VHDL.
+
+The translation replaces the explicit state table and Karnaugh equations with an \textbf{enumerated
+type} naming each state, a \textbf{case statement} describing each state's transitions, and the
+synthesis tool left to work out the flip-flop encoding and gate-level logic.
+
+\subsection{The enumerated state type}
+\label{c8:enum}
+Suppose a machine with three states controlling an LED: \code{STATE_OFF}, \code{STATE_BLINK}
+(blinking at a fixed rate) and \code{STATE_ON}. VHDL declares exactly those three values as a new
+type:
+
+\begin{vhdlcode}
+type state_t is (STATE_OFF, STATE_BLINK, STATE_ON);
+signal state: state_t;
+...
+state <= STATE_ON;
+\end{vhdlcode}
+
+\subsection{The case-statement pattern}
+\label{c8:case}
+The machine is almost always a synchronous process updating \code{state} on the rising edge via a
+\code{case}, one branch per state, with an asynchronous reset returning it to a known starting
+state. Assuming \code{to_next_state} and \code{to_prev_state} are synchronized, edge-detected pulses
+produced exactly like \code{X} in \secref{c8:a2} and \secref{c8:a3}:
+
+\begin{vhdlcode}
+process(clock, reset_s2_n) is
+begin
+    if (reset_s2_n = '0') then
+        -- On reset, go to STATE_OFF.
+        state <= STATE_OFF;
+    elsif (rising_edge(clock)) then
+        case (state) is
+            when STATE_OFF =>
+                if (to_next_state = '1') then
+                    state <= STATE_BLINK;
+                elsif (to_prev_state = '1') then
+                    state <= STATE_ON;
+                end if;
+            -- STATE_BLINK and STATE_ON follow the same shape.
+            when others =>
+                state <= STATE_OFF;
+        end case;
+    end if;
+end process;
+\end{vhdlcode}
+
+\noindent\code{case (state) is ... end case;} must cover every value \code{state_t} can take, and
+\code{when others} keeps it exhaustive if you add a state later and forget a branch.
+
+What \code{when others} is \emph{not} is a safety net against a corrupted state register. Once
+every state has its own branch, as in \file{fsm_led.vhd} below (the listing above abbreviates two
+of them away, so \emph{its} \code{when others} is reachable and would wrongly reset the machine from
+\code{STATE_BLINK} or \code{STATE_ON}), every value of \code{state_t} is already named above it, so
+the branch is unreachable in the source and synthesis normally optimizes it away rather than
+building recovery logic. Once Quartus re-encodes the machine, most bit patterns are illegal, and
+recovering from one requires Quartus's Safe State Machine setting rather than anything you can
+write in VHDL.
+
+\subsection{Worked example: \code{fsm_led}}
+\label{c8:fsmled}
+\file{lectures/L08/fsm_led/fsm_led.vhd} implements exactly that three-state machine, extended to two
+buttons: \code{button_n(0)} advances, \code{button_n(1)} goes back, the states are closed in a loop,
+and \code{STATE_BLINK} toggles the LED every 100\,ms.
+
+Three subcomponents are reused, all of them modules you wrote yourself:
+\begin{itemize}
+  \item \code{reset_sync}: Chapter~\ref{c4:ch}'s reset synchronizer, unchanged
+    (Exercise~\ref{c4:ex:8}).
+  \item \code{button_sync}: Chapter~\ref{c4:ch}'s button synchronizer, also unchanged, but
+    instantiated with \code{generic map(2)} so it handles both buttons at once, producing a two-bit
+    pulse vector. This is the payoff of the generic: the file is identical to the one
+    Chapters~\ref{c4:ch} and~\ref{c7:ch} instantiate with \code{1} (Exercise~\ref{c4:ex:9}).
+  \item \code{timer}: Chapter~\ref{c7:ch}'s timer, unchanged (Exercise~\ref{c7:ex:4}).
+    \code{fsm_led} declares its own \code{TIMER_TICK_COUNT} generic and passes it straight through,
+    defaulting to \code{5_000_000} for 100\,ms at \code{50 MHz}, and only enables the timer while in
+    \code{STATE_BLINK}.
+\end{itemize}
+None of the three is shipped in \file{fsm_led/}: copy your own in before building the example. By
+this point in the book that is four chapters' worth of your own modules composed into one design,
+which is the thing worth noticing about it.
+
+Two synchronous processes implement the machine:
+\begin{itemize}
+  \item \code{STATE_PROCESS} is the \code{case} transition logic above, driven by
+    \code{to_next_state}/\allowbreak\code{to_prev_state}, derived combinationally from
+    \code{button_edge_s2}.
+    Each requires the \emph{other} button's pulse to be \code{'0'} in the same cycle, so pressing
+    both close enough together that their pulses land on one clock cycle moves the machine nowhere
+    rather than picking a winner arbitrarily. An ambiguous input deserves a defined answer, and
+    ``do nothing'' is the one that cannot surprise you.
+  \item \code{LED_PROCESS} drives \code{led_s} purely from the current state: off in
+    \code{STATE_OFF}, on in \code{STATE_ON}, toggling on every timer timeout in \code{STATE_BLINK}.
+    Because it never reads \code{button_n} or \code{button_edge_s2} directly, only \code{state},
+    this is a genuine Moore machine: the LED reacts to a press only indirectly, through the state it
+    caused.
+\end{itemize}
+This is the whole of \file{lectures/L08/fsm_led/fsm_led.vhd}:
+
+\vhdlfile{lectures/L08/fsm_led/fsm_led.vhd}
+
+\section{Mealy Machines: The One-Cycle Difference}
+\label{c8:a5}
+Everything so far has been a \textbf{Moore} machine, deliberately: Moore is the safer default and
+the form you design by hand. A \textbf{Mealy} machine relaxes the rule that defines a Moore machine:
+the output may depend on the current state \emph{and} the current input, computed combinationally.
+It is not stored in a register, and it changes within the same clock cycle the input does.
+
+\subsection{The behaviour: detect two consecutive \code{1} bits}
+\label{c8:mealydetect}
+A serial input \code{din} carries one bit per clock cycle, and \code{y} should indicate that the
+last two bits were both \code{1}, with overlapping matches counting, so \code{111} reports a match
+twice.
+
+As a Mealy machine this needs only two states, because the output can react to the input
+\emph{before} it is reflected in the next state: \code{STATE_IDLE} (the previous bit was \code{0},
+or this is the first) and \code{STATE_ONE} (the previous bit was \code{1}).
+
+\begin{narrowtable}{@{}lcll@{}}
+  \thead{State} & \thead{\code{din}} & \thead{Next state} & \thead{\code{y}} \\
+  \midrule
+  \code{STATE_IDLE} & 0 & \code{STATE_IDLE} & 0 \\
+  \code{STATE_IDLE} & 1 & \code{STATE_ONE} & 0 \\
+  \code{STATE_ONE} & 0 & \code{STATE_IDLE} & 0 \\
+  \code{STATE_ONE} & 1 & \code{STATE_ONE} & \textbf{1} \\
+\end{narrowtable}
+
+\noindent The state process is \secref{c8:a4}'s \code{case} pattern; only the output differs. This
+is \file{lectures/L08/seq_detect_mealy/seq_detect_mealy.vhd}, and its output assignment is a single
+concurrent statement, entirely outside any clocked process:
+
+\begin{vhdlcode}
+y <= '1' when (state = STATE_ONE and din = '1') else '0';
+\end{vhdlcode}
+
+\noindent That is a \textbf{conditional signal assignment}, and it is the last piece of VHDL syntax
+this book introduces. It is a concurrent statement, so it lives in the architecture body rather than
+inside a process, and it describes a multiplexer: pick the first value whose condition holds,
+otherwise the value after \code{else}. It is the same hardware you would get from an
+\code{if}/\code{else} inside a combinational process, written in one line instead of five, and it is
+worth having because a one-line output assignment makes it obvious at a glance what the output
+depends on.
+
+\begin{vhdlcode}
+-- These two describe exactly the same multiplexer.
+x <= a when sel = '1' else b;
+
+process(sel, a, b) is
+begin
+    if (sel = '1') then
+        x <= a;
+    else
+        x <= b;
+    end if;
+end process;
+\end{vhdlcode}
+
+\noindent Always give it an \code{else}. Leave one out and you have described a signal that keeps
+its old value when no condition holds, which is a latch, exactly as in \secref{c5:a3}.
+\code{fsm_led} uses this form three times, and Exercise~\ref{c8:ex:4} asks you to use it.
+
+\textbf{That one line is the whole distinction.} It reads \code{din}, so it is Mealy. Move the same
+condition inside the clocked process, or drop \code{din} from it, and you have a Moore machine
+instead.
+
+This is the whole of \file{lectures/L08/seq_detect_mealy/seq_detect_mealy.vhd}:
+
+\vhdlfile{lectures/L08/seq_detect_mealy/seq_detect_mealy.vhd}
+
+\subsection{What it costs, and what it buys}
+\label{c8:mealycost}
+The Moore version of this detector needs a \textbf{third} state, \code{M_TWO}, existing purely to
+remember for one cycle that the match happened, so the output has something to read that does not
+depend on the input. Feed both machines \code{1, 1, 0, 1, 1, 1}:
+
+\begin{narrowtable}{@{}cclclc@{}}
+  \thead{Cycle} & \thead{\code{din}} & \thead{Mealy state (before)} & \thead{Mealy \code{y}} &
+    \thead{Moore state (before)} & \thead{Moore \code{y}} \\
+  \midrule
+  1 & 1 & \code{STATE_IDLE} & 0 & \code{M_IDLE} & 0 \\
+  2 & 1 & \code{STATE_ONE} & \textbf{1} & \code{M_ONE} & 0 \\
+  3 & 0 & \code{STATE_ONE} & 0 & \code{M_TWO} & \textbf{1} \\
+  4 & 1 & \code{STATE_IDLE} & 0 & \code{M_IDLE} & 0 \\
+  5 & 1 & \code{STATE_ONE} & \textbf{1} & \code{M_ONE} & 0 \\
+  6 & 1 & \code{STATE_ONE} & \textbf{1} & \code{M_TWO} & \textbf{1} \\
+\end{narrowtable}
+
+\noindent The Moore \code{y} column is exactly the Mealy \code{y} column shifted down one row. That
+is the entire trade: Mealy reports the match the \emph{same} cycle the second \code{1} arrives where
+Moore takes one more, and Mealy needs 2 states where Moore needs 3.
+
+\subsection{Which to reach for}
+\label{c8:whichone}
+Moore, almost always, and it is what the rest of this book uses:
+\begin{itemize}
+  \item its output depends on no primary input, so it cannot follow a noisy one.
+  \item a Mealy output can in principle glitch combinationally if its inputs aren't already clean.
+  \item note that ``Moore'' on its own does not mean glitch-free. An output decoded combinationally
+    from several state bits, like \secref{c8:a2}'s \code{Y = Q1Q2'}, can still glitch while those
+    bits skew on a transition. What makes an output glitch-free is \emph{registering} it, the way
+    \code{fsm_led}'s \code{LED_PROCESS} does, and that is what you want on anything driving a wire
+    off the chip. A serial \code{tx} line decoded straight from the state bits will emit spurious
+    edges.
+  \item a machine whose output depends on fewer things is a machine with fewer ways to be wrong.
+\end{itemize}
+Reach for Mealy only when you specifically need the lower latency or the smaller state count, and
+know that you are trading a synchronous output for a combinational one when you do.
+
+\section{FPGA Demonstration}
+\label{c8:a6}
+\code{fsm_led} synthesizes and runs exactly the way every VHDL design has since
+Chapter~\ref{c1:ch} (Appendix~\ref{app:quartus}): create a Quartus Prime Lite project targeting the
+DE0-CV's \code{5CEBA4F23C7N}, add the \file{.vhd} files for the example and its subcomponents,
+compile, assign each port to a physical pin in the Pin Planner, then recompile and program the
+board.
+
+For \code{fsm_led}, assign \code{clock} to the 50\,MHz oscillator pin, \code{reset_n} and
+\code{button_n(1 downto 0)} to three push buttons, and \code{led} to an onboard LED. Then confirm
+that pressing ``next'' repeatedly cycles the LED \code{off -> blinking -> on -> off}, that
+``previous'' runs the other way, and that reset returns it to off.
+
+\code{seq_detect_mealy} is deliberately \textbf{not} demonstrated on the board. It consumes one bit
+per clock cycle, and a switch flipped by hand holds its value for millions of cycles, so the only
+thing an LED can show is the degenerate case: \code{din} held high, \code{y} high from the second
+cycle onward. The one-cycle distinction the whole of \secref{c8:a5} is about happens far too fast
+to see. Run its testbench instead, which is the general lesson rather than an exception:
+
+\begin{shell}
+cd lectures/L08/seq_detect_mealy
+cp ../../L04/exercises/reset_sync/reset_sync.vhd .     # the one you wrote in L04
+ghdl -a --std=93 reset_sync.vhd seq_detect_mealy.vhd seq_detect_mealy_tb.vhd
+ghdl -e --std=93 seq_detect_mealy_tb
+ghdl -r --std=93 seq_detect_mealy_tb --assert-level=error --stop-time=10ms
+\end{shell}
+
+\noindent Exact pin numbers depend on which DE0-CV buttons and LEDs you choose, assigned the same way
+as for every design since Chapter~\ref{c1:ch}. Refer to the DE0-CV's own documentation for its
+physical pinout if you need to confirm which header pin corresponds to which labelled button, switch
+or LED.

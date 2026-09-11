@@ -1,0 +1,94 @@
+% Short answers to Chapter 7's exercises, lectures/L07/appendix/b_exercises.md.
+
+\answerchapter{c7:ch}
+
+\answer{c7:ex:1}{Retargeting the timer by hand}
+\pt{a}\code{12} is \code{1100}. Two constants change: \code{Q2}'s from \code{0} to \code{1} and
+\code{Q1}'s from \code{1} to \code{0}; \code{Q3}'s stays \code{1} and \code{Q0}'s stays \code{0}.
+Each XNOR only tests one bit for equality with its constant, so the target lives entirely in the
+constants and any 4-bit value is the same four XNORs and one AND.
+\pt{c}Every 16 edges. Without the clear the counter runs on past \code{1100} through \code{1111}
+and wraps to \code{0000} on its own, so it reads \code{1100} once per sixteen-state lap.
+\pt{d}Two counts: \code{1100} and the count that differs from it only in the disconnected bit
+(\code{0100}, \code{1000}, \code{1110} or \code{1101} for \code{Q3}, \code{Q2}, \code{Q1} or
+\code{Q0}). With the clear in place the counter is cleared at whichever it reaches first, so a
+broken \code{Q3} or \code{Q2} fires at 4 or 8 instead of 12, while a broken \code{Q1} or \code{Q0}
+goes unseen, because 14 and 13 are never reached; without the clear both counts fire on every lap.
+
+\answer{c7:ex:2}{Reading the timer module}
+\pt{a}It is set only on the edge where the counter is already at \code{TICK_COUNT} and is cleared,
+and the unconditional \code{timeout <= '0';} at the top of the clocked branch takes it low again on
+the next edge. One pulse per period is one event, usable downstream as a one-cycle enable; a level
+would act on every cycle it stayed high.
+\pt{b}It pauses: the counter holds its value, \code{timeout} stays low, and counting resumes from
+there when \code{enable} returns high.
+\pt{c}The timer is a part inside a larger design, and its flip-flops must leave reset on the same
+clock edge as everything else. The raw \code{reset_n} is released asynchronously, which could let
+them leave reset on different edges or go metastable; the design around it synchronizes the reset
+once, with \code{reset_sync}.
+\pt{d}The \code{TICK_COUNT} generic, set per instance in its \code{generic map}. Its value is fixed
+when the design is elaborated, before synthesis runs, and cannot change while the circuit runs.
+
+\answer{c7:ex:3}{Tick counts at 50\,MHz}
+\pt{a}\code{49_999_999}.
+\pt{b}\code{12_499_999}.
+\pt{c}\code{2_499_999}.
+
+\answer{c7:ex:4}{Writing the timer}
+\ptnote{A clearing enable}Case~5 fails, with ``\code{timer: disabling must pause the count, not
+clear it}\ldots'': a re-enabled timer that was cleared needs a full \code{TICK_COUNT + 1} edges
+and is still low when the interrupted period should end. It is measuring that \code{enable} holds
+the count and resumes it, not the period or the pulse width.
+\ptnote{The ``+ 1''}In the comparison: the counter increments while \code{TICK_COUNT > counter} and
+is cleared only on the edge where it already equals \code{TICK_COUNT}, so the value
+\code{TICK_COUNT} itself takes a cycle of its own.
+\ptnote{Decoded versus registered}The decode is high during the cycle the count reads
+\code{TICK_COUNT}; the registered \code{timeout} is high one cycle later, while \code{counter} reads
+\code{0}. Downstream logic sees the same period a cycle apart, and only the registered pulse is
+clean: it comes straight off a flip-flop, where the decode can glitch while the counter bits change.
+
+\answer{c7:ex:5}{A one-second blinker}
+\ptnote{Half a second, one blink}Each timeout toggles the LED once, and one blink is two toggles,
+on then off, so a full cycle takes two half-second timer periods.
+\ptnote{LED off during reset}It checks the asynchronous assertion. It does not check the
+synchronous release, which the testbench checks separately through when the first toggle arrives.
+\ptnote{Raw reset into the timer}A reset-release race: the timer would leave reset two edges before
+the LED flip-flop, and a release asynchronous to the clock could let its own flip-flops leave reset
+on different edges or go metastable, starting the count from a corrupt value. The testbench sees
+the first toggle 5 edges after \code{reset_n} is released instead of 7.
+
+\answer{c7:ex:6}{The walking LED}
+\ptnote{A clearing timer}Every restart waits a full timer period, half a second, before the first
+step, however much of the interrupted step had already passed, instead of finishing that step; a
+walk stopped and restarted within half a second at a time would never move.
+\ptnote{A fixed width}Two copies of the same module, a one-button and a two-button
+\code{button_sync} (or the file edited for each design), to be kept identical by hand.
+
+\answer{c7:ex:7}{Changing the walking LED}
+\pt{a}At \code{TICK_COUNT = 6} it expects \code{60 / 7 = 8} shifts, give or take one, in its
+60-cycle window. The expected count is $\lfloor 60 / (\bool{TICK\_COUNT} + 1) \rfloor$: from
+\code{TICK_COUNT = 30} it is 1, and the tolerance already accepts a walk that never moves; past the
+window, from \code{TICK_COUNT = 60}, it is 0, and the check proves only that the LED moved at most
+once. \code{TICK_COUNT} only sets how many clock cycles pass between timeout pulses, and everything
+else does the same on each pulse, so a larger value only lengthens the step.
+\pt{b}Its widths would have been written as literals rather than in terms of \code{LED_COUNT}: a
+port \code{std_logic_vector(3 downto 0)}, a rotate \code{shift_reg(2 downto 0) & shift_reg(3)}, a
+reset value \code{"0001"}.
+\pt{c}The line that loads the reset pattern in \code{SHIFT_PROCESS}'s reset branch,
+\code{shift_reg <= (0 => '1', others => '0');}. The testbench fails its very first check, with
+``\code{walking_led: reset should load a single lit bit at position 0!}''.
+The design is right for the new specification; the testbench's \code{RESET_PATTERN} still asserts
+the old one, and with it changed to the new pattern every check passes.
+
+\answer{c7:ex:8}{Reversing the walk}
+\pt{d}\begin{itemize}
+  \item The testbench's port map connects its one-bit \code{std_logic} signal \code{button_n} to
+    the now two-bit port, so the testbench no longer analyses. GHDL reports
+    \code{can't associate "button_n" with port "button_n"}, giving the actual's type as
+    \code{STD_LOGIC} and the port's as a subtype of \code{STD_LOGIC_VECTOR}.
+  \item After reset, bit 0 is lit and still. The first button starts a walk toward the MSB,
+    wrapping to bit 0; the second button reverses it, the bit now walking toward bit 0 and wrapping
+    to the top; the second button again restores the original direction; the first button stops
+    it, and a second-button press while stopped moves nothing but reverses the next walk; reset
+    puts bit 0 back, stopped.
+\end{itemize}

@@ -1,0 +1,46 @@
+% Section 4.10, from lectures/L04/README.md: the objectives, the questions to test yourself, and the
+% next lecture.
+
+\needspace{10\baselineskip}
+\section{Review}
+\label{c4:sec:review}
+
+\subsection*{What you should be able to do now}
+After this chapter, you should be able to:
+\begin{itemize}
+  \item Explain what metastability is, why an asynchronous input can cause it, and why two
+    flip-flops make it unlikely rather than impossible.
+  \item Apply the double-flop synchronizer to any asynchronous input, including the ``assert
+    asynchronously, release synchronously'' pattern used for resets.
+  \item Say why that chain doubles as a practical but incomplete debounce, and what a real one would
+    add.
+  \item Give a module a \code{generic}, override it with a \code{generic map}, write a port's width
+    in terms of it, and judge when a generic earns its place rather than adding one on principle.
+\end{itemize}
+
+\needspace{6\baselineskip}
+\subsection*{Questions to test yourself}
+You should be able to explain:
+\begin{enumerate}
+  \item What exactly happens when an asynchronous input to a flip-flop changes too close to an
+    active clock edge?
+  \item How does the double-flop synchronizer address that, and why is the \emph{second}
+    flip-flop's output the one that is safe to use?
+  \item Why does the chain used here behave like a debounce circuit in CircuitVerse but not fully
+    debounce a real button at \code{50 MHz}, and why is that a property of the clock period rather
+    than of the circuit? What would you add to fix it?
+  \item \code{button_sync} has a generic and \code{reset_sync} has none. What is the rule, and what
+    would be wrong with giving \code{reset_sync} a \code{WIDTH} generic ``for symmetry''?
+\end{enumerate}
+
+\needspace{6\baselineskip}
+\subsection*{Looking ahead}
+Chapter~\ref{c5:ch} is about the one construct left, and what the toolchain builds:
+\begin{itemize}
+  \item \code{variable}: the one construct you have not met yet, and the sharp distinction between
+    how it updates and how a \code{signal} does.
+  \item Why the same accumulation written with a \code{signal} and with a \code{variable} gives two
+    different answers, and which of the two is the bug.
+  \item What the toolchain actually builds: LUTs and flip-flops, what limits a clock's speed, and
+    the latch you infer by accident.
+\end{itemize}

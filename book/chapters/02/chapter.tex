@@ -1,0 +1,51 @@
+% Chapter 2, typeset from lectures/L02: the README is the opener and the closing review, and each
+% part of Appendix A is a section, in the same order and with the same subsections. Appendix C,
+% the guide to running testbenches, is one section after them, with a subsection per part, and
+% Appendix B, the exercises, is the last section.
+
+\chapter{Larger Networks, Multiplexers and Submodules}
+\label{c2:ch}
+
+{\large\itshape Minimizing a network, the first constructs that need a process, and the first design
+built from more than one entity.\par}
+
+\begin{chapterbox}{In this chapter}
+\begin{itemize}
+  \item \code{process} and \code{case}: sequential statements inside otherwise parallel hardware.
+  \item \code{std_logic_vector}: bundling several wires under one name, indexing and slicing.
+  \item Multiplexers: a 4-to-1 mux, the smallest thing worth writing a \code{case} for.
+  \item Karnaugh maps: why reading sum-of-products off a truth table rarely gives the smallest
+    network.
+  \item Submodules: writing a block once and instantiating it more than once.
+  \item \code{hex_display} on a DE0-CV: eight switches in, two hexadecimal digits out.
+  \item Multiplexers at other sizes, in \secref{c2:a4} and \secref{c2:a5}, and the 4-to-1
+    re-derived by hand in Exercises~\ref{c2:ex:4} to~\ref{c2:ex:6}.
+  \item Running a self-checking testbench with GHDL, the guide every later chapter points back to,
+    in \secref{c2:app:c}.
+\end{itemize}
+\end{chapterbox}
+
+The course this book comes from builds this chapter live, in a particular order. First a 4-to-1
+multiplexer in VHDL: four inputs, a two-bit selector, four branches, the smallest thing worth
+writing a \code{case} for, and the place where \code{process}, \code{case} and vector indexing all
+arrive. Then a Karnaugh map, worked end to end in CircuitVerse: \secref{c2:a1}'s three-variable
+example, five \code{1} rows off the truth table, two groups on the map, and \code{X = AB + C} built
+as two gates. It is small enough to derive and check by hand, and Exercise~\ref{c2:ex:9} scales the
+same technique up to a segment decoder. Then \code{display}, a 7-segment decoder, which is the
+multiplexer's \code{case} with sixteen branches instead of four, the only new thing being the
+segment table; and \code{hex_display}, two instances of \code{display} with eight switches sliced
+into two halves. Finally the design goes onto the board: set the switches, read the hex digits.
+
+Multiplexers at other sizes are for reading rather than presenting, in \secref{c2:a4} and
+\secref{c2:a5}. Exercise~\ref{c2:ex:5} builds the 2-to-1, and Exercises~\ref{c2:ex:4}
+and~\ref{c2:ex:6} have you re-derive the 4-to-1, by hand and then in VHDL, rather than copy it.
+
+Read the sections that follow before you start the exercises, and install GHDL, following
+\secref{c2:app:c}, if you have not already: Chapter~\ref{c1:ch}'s exercises needed it too, and
+every exercise from here on that asks you to write a VHDL module does. The board work is shown in
+Appendix~\ref{app:quartus} for anyone who has a DE0-CV; no exercise needs one.
+
+\input{chapters/02/networks}
+\input{chapters/02/testbenches}
+\input{chapters/02/summary}
+\input{chapters/02/exercises}

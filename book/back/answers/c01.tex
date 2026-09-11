@@ -1,0 +1,40 @@
+% Short answers to Chapter 1's exercises, lectures/L01/appendix/b_exercises.md.
+
+\answerchapter{c1:ch}
+
+\answer{c1:ex:1}{A function that ignores an input}
+\pt{a}\code{X = A'B' + AB'}.
+\pt{b}\code{X = (A' + A)B' = 1 · B' = B'}.
+\pt{c}\code{X} does not depend on \code{A} at all. The gate is a single \code{NOT} on \code{B}, and
+the \code{A} input is left unconnected.
+
+\answer{c1:ex:3}{Three-input XOR}
+\pt{a}\truthrow{abc}{000,001,010,011,100,101,110,111}{x}{0,1,1,0,1,0,0,1}\par\smallskip
+\noindent\code{x} is \code{1} in exactly the four rows with one or three \code{1}s.
+
+\answer{c1:ex:4}{Majority gate}
+\pt{a}\truthrow{abc}{000,001,010,011,100,101,110,111}{x}{0,0,0,1,0,1,1,1}
+\pt{b}\code{x = a'bc + ab'c + abc' + abc}.
+\ptnote{Looking ahead}Four 3-input ANDs, one 4-input OR and three \code{NOT}s, eight gates;
+\code{ab + ac + bc} is three 2-input ANDs and one 3-input OR, four gates.
+
+\answer{c1:ex:6}{OR from NAND}
+\pt{a}\code{(A'B')' = A'' + B'' = A + B}. Read as a circuit, \code{A'B'} with an inverted output is a \code{NAND} of
+\code{A'} and \code{B'}, and each inversion is a \code{NAND} with its inputs tied together: three
+\code{NAND} gates.
+\pt{b}\code{NOT}: one \code{NAND}; \code{AND}: two; \code{OR}: three.
+\pt{d}A process that offers one gate type has one gate to design, characterize and lay out, and
+because \code{NAND} can build every function, a library of it alone is complete. \code{NAND} is the
+cheapest CMOS gate, four transistors with no output inverter, where \code{AND} is a \code{NAND}
+plus an inverter, so building from it is the cheapest way to build anything.
+
+\answer{c1:ex:7}{The braking assistant}
+\pt{b}\begin{itemize}
+  \item It fails first at \code{driver_brake = 1}, \code{sensor = 0}, \code{radar = 0},
+    \code{error = 1}, the testbench's case \code{i = 9}: the driver is on the pedal, the assistance
+    system is reporting a fault, and the car does not brake.
+  \item Four rows, \code{i = 9}, \code{11}, \code{13} and \code{15}: all of them have
+    \code{driver_brake = 1} and \code{error = 1}.
+  \item A truth table derived from the requirement is an independent check that catches the
+    mistake; one read off the circuit you built would contain the same mistake and agree with it.
+\end{itemize}

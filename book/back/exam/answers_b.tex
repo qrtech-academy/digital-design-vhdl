@@ -1,0 +1,1100 @@
+% Appendix, from exam/paper_b_solutions.md: the model answers to Paper B, with marks.
+
+% The answers' headings are labelled ansb:q:N.
+\renewcommand{\answerprefix}{ansb}
+
+\chapter{Model Answers to Paper B}
+\label{ansb:ch:answers}
+
+Marks are shown per part. Method carries them: a correct derivation with a slip in it is worth more
+than a correct answer with no working, and later parts consume earlier ones, so an error should be
+followed through rather than penalised twice.
+
+Where a part asks for VHDL, mark the \textbf{hardware described}, not the syntax. A listing with a
+missing semicolon and the right circuit in it scores full marks; a listing that compiles and infers
+a latch does not. The questions are in Appendix~\ref{exb:ch:paper}.
+
+% ==========================================================================================
+% The title is too long for one line: break it ragged, and before its last phrase.
+\answersection{1}{A requirement, and the shape of the network it asks for}{12}
+
+\answerpart{a}{2}
+\begin{textdrawing}
+run = left · right · curtain_clear · estop_n
+\end{textdrawing}
+\noindent\worth{1}
+
+\textbf{Gates.} One four-input AND, or three two-input ANDs if the library has nothing wider.
+\textbf{No inverter}, which is worth noticing before part (c) asks about it: the condition wanted is
+``the stop has \emph{not} been pulled'', and that is \code{estop_n = 1} as it stands.
+
+\textbf{The table.} Four inputs, sixteen rows, and exactly \textbf{one} of them is \code{1}: the row
+where all four are \code{1}. \worth{1}
+
+\answerpart{b}{4}
+\begin{textdrawing}
+run = estop_n · ( maint'·left·right·curtain_clear  +  maint·pedal )
+\end{textdrawing}
+\noindent\worth{1}
+
+\textbf{The factored input: \code{estop_n}.} It multiplies the whole sum rather than appearing
+inside either branch.
+
+\textbf{What that expresses.} No mode can bypass the emergency stop. It is not an input to the mode
+logic; it gates the mode logic's result. A third mode added next year cannot accidentally create a
+path that runs the press with the stop pulled, because every path goes through the same AND.
+\worth{1}
+
+\textbf{The contrast.}
+
+\begin{booktable}{@{}>{\raggedright\arraybackslash}p{8.4em}LL@{}}
+  & \thead{Braking assistant} & \thead{Press control} \\
+  \midrule
+  Shape & \code{engine_brake = driver_brake + adas_brake} & \code{run = estop_n · (mode logic)} \\
+  The override & is ORed in \textbf{last}, outside the fault logic & is ANDed in \textbf{last},
+    outside the mode logic \\
+  Forces the output & \textbf{high} & \textbf{low} \\
+  Guarantees & the action is always \textbf{available}: the driver can always brake, including
+    when the assistance system is faulty and doing nothing & the action can always be
+    \textbf{prevented}: the press never cycles with the stop pulled, in any mode \\
+\end{booktable}
+
+\textbf{What routing the override through the logic would cost, in each case.} The same structural
+mistake with opposite consequences, which is why the two are worth seeing together. Feed
+\code{driver_brake} through the assistance system's fault logic and a fault stops the driver
+braking --- the safety requirement the structure exists to protect. Feed \code{estop_n} into only
+one branch of the sum, say the maintenance branch, and pulling the stop no longer stops the press
+in normal mode. Both are one wire in the wrong place, and neither shows up in a test that only
+exercises the happy path. \worth{1}
+
+\textbf{The count.} Sixty-four rows, of which \textbf{10} are \code{1}:
+\begin{itemize}
+  \item \code{estop_n = 1} throughout, \code{maint = 0}: needs
+    \code{left = right = curtain_clear = 1}, \code{pedal} free --- 2 rows.
+  \item \code{estop_n = 1}, \code{maint = 1}: needs \code{pedal = 1}, the three others free --- 8
+    rows.
+\end{itemize}
+
+\textbf{What the table would have cost you.} Ten AND-terms of six literals each, from a requirement
+that is two clauses long, plus the whole job of simplifying them back down. The structure came out
+of the \emph{statement} in one line. That is the case \secref{c1:a6} makes with the braking
+assistant: derive from the requirement, and use the table to check the answer rather than to find
+it. \worth{1}
+
+\answerpart{c}{3}
+\begin{vhdlcode}
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity press_control is
+    port(left, right, curtain_clear, estop_n, maint, pedal: in  std_logic;
+         run                                              : out std_logic);
+end entity;
+
+architecture behaviour of press_control is
+-- The two mode branches, before the emergency stop gates either of them.
+signal two_hand, maintenance: std_logic;
+begin
+    two_hand    <= (not maint) and left and right and curtain_clear;
+    maintenance <= maint and pedal;
+
+    run <= estop_n and (two_hand or maintenance);
+end architecture;
+\end{vhdlcode}
+
+{\itshape (2 marks: 1 for the entity with the ports in order, 1 for an architecture matching the
+candidate's own (b). The internal signals are optional; a single collapsed expression is equally
+correct.)\par}
+
+\medskip
+\textbf{Where the \code{not} is, and where it is not.} The one inversion is on \code{maint}, an
+\textbf{active-high} signal that has to be \emph{false} for the two-hand branch. \code{estop_n}, the
+\textbf{active-low} signal, needs no inversion at all.
+
+\textbf{The rule.} An \code{_n} suffix says what a \code{0} on that wire means; it does not say that
+an inversion is needed. Write down the condition you want first, then invert whatever does not
+already say it. ``Active-low, therefore \code{not}'' is the reflex to lose: here it would have
+produced a press that runs only while the emergency stop is pulled. \worth{1}
+
+\answerpart{d}{3}
+\textbf{The two parts.} The \code{entity} is the black-box view: the ports, and nothing about what
+happens inside. The \code{architecture} is the implementation behind it. \worth{1}
+
+\textbf{What the split makes possible.}
+\begin{itemize}
+  \item One design can \textbf{instantiate} another knowing only its entity, without reading the
+    architecture.
+  \item An implementation can be \textbf{rewritten} without touching anything that depends on it,
+    because nothing that depends on it was allowed to see it.
+\end{itemize}
+\noindent\worth{1}
+
+\textbf{What is different from a C header.} The shape is the same --- a header beside a source
+file, or an interface beside its class --- but VHDL \textbf{enforces} it, for every module, with no
+way to skip the interface and no way to leak the implementation through it. A C header is a
+convention: the compiler does not require one, nothing stops a translation unit from exposing its
+internals, and the interface and the implementation can disagree until the linker or the run finds
+out. In VHDL the entity is the only way in. \worth{1}
+
+% ==========================================================================================
+\answersection{2}{The map, the vector, and the process that lies}{14}
+
+\answerpart{a}{4}
+The map, \code{AB} down the rows and \code{CD} across, both in Gray-code order
+\code{00, 01, 11, 10}:
+
+\begin{narrowtable}{@{}ccccc@{}}
+  \code{AB}\,\textbackslash\,\code{CD} & \code{00} & \code{01} & \code{11} & \code{10} \\
+  \midrule
+  \code{00} & \textbf{1} & \textbf{1} & & \\
+  \code{01} & \textbf{1} & \textbf{1} & \textbf{1} & \textbf{1} \\
+  \code{11} & & & \textbf{1} & \textbf{1} \\
+  \code{10} & & & \textbf{1} & \textbf{1} \\
+\end{narrowtable}
+\credit{1 mark for the filled map}
+
+\textbf{A minimal cover, three groups of four:}
+
+\begin{narrowtable}{@{}llll@{}}
+  \thead{Group} & \thead{Cells} & \thead{Constant} & \thead{Term} \\
+  \midrule
+  The top-left block & \code{0000}, \code{0001}, \code{0100}, \code{0101} & \code{A = 0},
+    \code{C = 0} & \code{A'C'} \\
+  The bottom-right block & \code{1010}, \code{1011}, \code{1110}, \code{1111} & \code{A = 1},
+    \code{C = 1} & \code{AC} \\
+  The whole \code{AB = 01} row & \code{0100}, \code{0101}, \code{0111}, \code{0110} & \code{A = 0},
+    \code{B = 1} & \code{A'B} \\
+\end{narrowtable}
+
+\begin{console}
+X = A'C' + AC + A'B
+\end{console}
+
+{\itshape (3 marks: 1 per group with its cells and term. Nothing here wraps: all three groups are
+rectangles you can draw without leaving the map, which is what makes this one easier to see than
+the four-corner shapes. \code{A'B} may be replaced by \code{BC} throughout --- see (b).)\par}
+
+\answerpart{b}{2}
+\textbf{The colleague's answer.} \code{X = A'C' + AC + A'B + BC} is \textbf{correct}: it computes
+the same function, since every group in it is a legal group of cells that are genuinely \code{1}.
+It is not minimal.
+
+\textbf{Which group to drop: either \code{A'B} or \code{BC}, but not both.} \code{A'C'} and
+\code{AC} are forced --- \code{0000} and \code{0001} sit in no other legal group of four, and
+neither do \code{1010} and \code{1011} --- and between them they leave exactly two cells uncovered,
+\code{0110} and \code{0111}. Both \code{A'B} and \code{BC} cover that pair, and each of them has its
+other two cells already covered by one of the forced groups. So one of the two is redundant and
+either one may go.
+
+The rule is step 3 of the procedure: \textbf{use as few groups as will do it, and drop any group
+whose cells are every one of them already covered by another.} Nothing in the earlier steps forbids
+a redundant group, which is exactly why the step exists --- a redundant group is a redundant
+AND-term, correct but not minimal. \worth{1}
+
+\textbf{How many minimal answers.} \textbf{Two.}
+
+\begin{console}
+X = A'C' + AC + A'B        and        X = A'C' + AC + BC
+\end{console}
+
+\noindent are both three terms of two literals, and both minimal. What that means for marking:
+check the \textbf{function}, not the string. Two candidates can hand in different equations and
+both be right, and the only way to tell is to evaluate. What is \emph{not} right is keeping both,
+which is the colleague's answer. \worth{1}
+
+\answerpart{c}{4}
+\textbf{Slicing.} \code{input(7)} drives \textbf{bit 3} of the port. The two are matched \textbf{by
+position, left to right}, not by index number: \code{input(7)} drives bit 3, \code{input(6)} drives
+bit 2, and so on. The \textbf{lengths} have to match; the \textbf{numbering} does not.
+\code{input(7 downto 4)} really does have the index range \code{7 downto 4} and not
+\code{3 downto 0}, which is the detail that surprises a software engineer. \worth{2}
+
+\textbf{Why \code{count + 1} does not compile.} \code{std_logic_vector} says nothing about what the
+bits \emph{mean}, so it offers only the operations that make sense for a bundle of wires: the
+logical operators applied bit by bit, comparison, and concatenation. Arithmetic is not on that list
+because nothing has declared whether those four wires are an unsigned number, a signed one, or four
+unrelated signals. That is the type doing its job: the meaning genuinely is missing, so the
+operation is refused rather than guessed at. \worth{1}
+
+\textbf{What this book uses instead.} A plain integer with a range:
+
+\begin{vhdlcode}
+signal count: natural range 0 to 9;
+\end{vhdlcode}
+
+\noindent which adds and compares directly, and which synthesis turns into exactly the flip-flops
+the range needs. Vectors stay what they are, bundles of wires for things that really are bundles of
+wires. The two worlds meet only at a boundary, with the conversions from \code{ieee.numeric_std}:
+
+\begin{vhdlcode}
+count_v <= std_logic_vector(to_unsigned(count, 4));   -- integer to vector
+count   <= to_integer(unsigned(count_v));             -- vector to integer
+\end{vhdlcode}
+\noindent\worth{1}
+
+\answerpart{d}{2}
+\begin{vhdlcode}
+-- One expression.
+x <= (a and b) or ((not c) and d);
+\end{vhdlcode}
+
+\begin{vhdlcode}
+-- The same circuit, with the second term named.
+architecture behaviour of combo_logic is
+signal cd: std_logic;
+begin
+    cd <= (not c) and d;
+    x  <= (a and b) or cd;
+end architecture;
+\end{vhdlcode}
+\credit{1 mark for both}
+
+\textbf{What synthesis produces: the same circuit, twice.} An internal signal names a wire that
+already existed in the first version --- the output of the AND gate computing \code{c'd} --- so
+nothing has been added. On the Cyclone V both are one LUT, because a LUT is a lookup table over its
+inputs: a function of four or fewer inputs fits in one however it was written, and naming an
+intermediate term does not add an input. The answer is the same for both because VHDL describes
+hardware, and the two descriptions describe the same hardware.
+
+\textbf{Which to be handed in six months.} At two terms, honestly, either; the named version's
+advantage appears as soon as the expression outgrows one line, and the habit is worth having before
+you need it. An answer that simply asserts ``the named one is always better'' is worth less than
+one that says where the line is. \worth{1}
+
+\answerpart{e}{2}
+\textbf{What a simulator does.} The process re-runs only when a signal in its \textbf{sensitivity
+list} changes, and the list holds only \code{sel}. So a change on \code{a}, \code{b}, \code{c} or
+\code{d} while \code{sel} holds still is invisible: \code{x} keeps whatever value it took the last
+time \code{sel} moved. That is not a multiplexer. It behaves like a multiplexer whose output is
+captured whenever the selector changes and held in between.
+
+\textbf{What synthesis does.} It builds the multiplexer. The tool reads the logic, works out that
+\code{x} depends on \code{sel}, \code{a}, \code{b}, \code{c} and \code{d}, and produces a real
+4-to-1 mux --- usually emitting a warning that the sensitivity list is incomplete, and ignoring it
+either way. \worth{1}
+
+\textbf{Why they differ.} The sensitivity list is a \textbf{simulation} construct: it tells the
+simulator when to re-evaluate the process. It is not hardware, so there is nothing for the synthesis
+tool to build from it.
+
+\textbf{The class of bug: the simulator and the chip model different things.} That is the one class
+where a green testbench stops meaning anything, because the thing that passed is not the thing that
+ships. The book's other example is the opposite direction --- GHDL aborting on a counter wrap the
+drawing and the chip both perform happily. The lesson is the same in both: where the two models
+disagree, neither one alone is evidence. \worth{1}
+
+Worth a comment rather than a mark: the testbench passes here only because it changes \code{sel}
+for every case it checks. One that held \code{sel} still and varied the data would fail
+immediately, which is a useful thing to know about your own testbenches.
+
+% ==========================================================================================
+\answersection{3}{Storage, and the two ways a value updates}{13}
+
+\answerpart{a}{3}
+\textbf{How the two latches are driven.} In opposition. The master's own transparency control is
+the inverted clock and the slave's is the clock, so exactly one of the two is ever transparent.
+
+\textbf{Why that gives edge triggering.} While the clock is \textbf{low} the master is transparent
+and follows \code{D}, and the slave is closed, holding \code{Q}. At the \textbf{rising edge} the
+master closes, freezing whatever \code{D} was at that instant, and the slave opens and passes that
+frozen value to \code{Q}. While the clock is \textbf{high} the slave is transparent but its input
+cannot change, because the master ahead of it is closed; so \code{D} may do anything it likes and
+\code{Q} will not move. At the falling edge the slave closes and the master reopens for the next
+capture.
+
+The net effect is that exactly one value passes per period, captured at the instant the clock goes
+low to high, and \code{Q} never changes while the clock sits at either level. That external
+behaviour is what \code{rising_edge()} models. \worth{2}
+
+\textbf{The latch's weakness.} It is transparent for the \emph{entire} time \code{enable} is high,
+so any glitch on \code{D} during that window passes straight through to \code{Q}.
+
+\textbf{Why that is worse in a large system.} In a small circuit you can look at every path feeding
+\code{D} and convince yourself it is stable across the phase. In a large one there are thousands,
+each with its own delay, and guaranteeing that all of them are settled throughout an entire clock
+phase is far harder than guaranteeing they are settled at one instant --- which is all the
+flip-flop asks for. \worth{1}
+
+\answerpart{b}{4}
+\begin{vhdlcode}
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity register4 is
+    port(clock, reset_n, enable: in  std_logic;
+         d                     : in  std_logic_vector(3 downto 0);
+         q                     : out std_logic_vector(3 downto 0));
+end entity;
+
+architecture behaviour of register4 is
+begin
+    REGISTER_PROCESS: process(clock, reset_n) is
+    begin
+        if (reset_n = '0') then
+            q <= (others => '0');
+        elsif (rising_edge(clock)) then
+            if (enable = '1') then
+                q <= d;
+            end if;
+        end if;
+    end process;
+end architecture;
+\end{vhdlcode}
+
+{\itshape (2 marks: 1 for the entity and port order, 1 for the process with \code{clock} and
+\code{reset_n} in the sensitivity list, the reset branch outside the clocked branch, and the enable
+inside it)\par}
+
+\medskip
+\code{q} is only ever assigned here, never read, so no internal signal is needed. A design that
+toggles or otherwise reads its own output does need one, because an output port cannot be read
+back.
+
+\textbf{Flip-flops: four.} What decides it is the \textbf{width of the signal assigned inside the
+clocked process} --- every signal assigned there becomes flip-flops, one per bit. Four bits, one
+process, four flip-flops, no different in principle from four \code{d_flip_flop} instances wired in
+parallel. \worth{1}
+
+\textbf{Reset branch first: meaning, not style.} The \code{if}/\code{elsif} is read in priority
+order, so the reset branch coming first is what makes the reset take priority and act with no clock
+edge involved. Put \code{rising_edge(clock)} first and the reset is only examined at an edge, which
+is a \textbf{synchronous} reset: a different circuit, one that ignores a reset pulse landing
+entirely between two edges. It is also the shape the synthesis tool pattern-matches to infer an
+asynchronous reset at all. \worth{1}
+
+\answerpart{c}{4}
+\textbf{The trace.} Both are signals, so both assignments \textbf{schedule}: neither takes effect
+until the process suspends, and every right-hand side in the pass reads the value the signal held
+\emph{before} the edge. \code{stage2_s <= stage1_s;} therefore reads the old \code{stage1_s}, not
+the \code{din} the line below is putting there, and the two lines describe two flip-flops in
+series.
+
+\begin{narrowtable}{@{}lcccc@{}}
+  \thead{Edge} & \thead{\code{din}} & \thead{\code{stage1_s} after} & \thead{\code{stage2_s} after}
+    & \thead{\code{q} after} \\
+  \midrule
+  (after reset) & -- & \code{0} & \code{0} & \code{0} \\
+  1 & \code{0} & \code{0} & \code{0} & \code{0} \\
+  2 & \code{1} & \code{1} & \code{0} & \code{0} \\
+  3 & \code{0} & \code{0} & \code{1} & \code{1} \\
+  4 & \code{0} & \code{0} & \code{0} & \code{0} \\
+\end{narrowtable}
+
+\noindent The \code{1} on \code{din} at edge 2 reaches \code{stage1_s} at edge 2 and \code{q} at
+edge 3: \textbf{two} edges, not one.
+
+{\itshape (2 marks: 1 for the table, 1 for reading each right-hand side against the pre-edge value
+rather than asserting the answer)\par}
+
+\medskip
+\textbf{The rule.} A signal assignment inside a process \textbf{schedules} a new value, applied only
+when the process suspends; every read in the same pass sees the old value. It is the same rule
+Chapter~\ref{c3:ch} states for the two-assignment process, and it is what lets a clocked process
+describe a chain of flip-flops in whatever order the lines happen to be written.
+
+\textbf{Swapping the two assignments changes nothing.} Write \code{stage1_s <= din;} first and
+\code{stage2_s <= stage1_s;} second, and \code{stage2_s} still reads the pre-edge \code{stage1_s},
+because scheduling does not care which line came first. That is the point worth taking away:
+\textbf{with signals in a clocked process, order does not matter}, which is exactly why the author's
+line-order reasoning was the wrong tool. A \code{variable} is the object for which order
+\emph{would} matter, and Chapter~\ref{c5:ch} is where the book picks that up. \worth{1}
+
+\textbf{The change that gives one cycle.} Delete \code{stage2_s} and drive the output from the first
+stage: \code{stage1_s <= din;} in the process, \code{q <= stage1_s;} outside it. One assignment,
+one register.
+
+\textbf{Flip-flops.} The listing as written builds \textbf{two} --- \code{stage1_s} and
+\code{stage2_s} are each assigned under \code{rising_edge(clock)} with an asynchronous reset, which
+is a flip-flop apiece; \code{q <= stage2_s;} is a wire and costs nothing. After the fix,
+\textbf{one}. The extra edge of latency and the extra flip-flop are the same fact seen from two
+sides. \worth{1}
+
+\answerpart{d}{2}
+\textbf{Why one edge.} Every flip-flop in the design changes at the same well-defined instants, so
+the circuit's behaviour is defined at a sequence of points rather than continuously. \worth{1}
+
+\textbf{What that buys.} It turns a continuous-time problem into a discrete one. You can reason
+\textbf{one clock cycle at a time} --- ``given the state at this edge, what is the state at the
+next?'' --- instead of tracking every signal continuously and worrying about the order in which
+things happen in between. Between edges, nothing has to be true except that everything settles
+before the next one arrives, which reduces the whole timing question for an arbitrarily large design
+to a single number: the longest path against the period. That is what makes a circuit too large to
+see all at once analyzable at all, by you or by the tool. \worth{1}
+
+% ==========================================================================================
+\answersection{4}{One module, several widths}{13}
+
+\answerpart{a}{5}
+\begin{vhdlcode}
+library ieee;
+use ieee.std_logic_1164.all;
+
+architecture behaviour of button_sync is
+-- Three stages, each COUNT bits wide: two synchronizing, one remembering.
+signal button_s1_n, button_s2_n, button_s3_n: std_logic_vector(COUNT-1 downto 0);
+begin
+    -- Falling edge: pressed now, released the cycle before. Bit by bit.
+    button_edge_s2 <= (not button_s2_n) and button_s3_n;
+
+    BUTTON_PROCESS: process(clock, reset_s2_n) is
+    begin
+        if (reset_s2_n = '0') then
+            button_s1_n <= (others => '1');
+            button_s2_n <= (others => '1');
+            button_s3_n <= (others => '1');
+        elsif (rising_edge(clock)) then
+            button_s1_n <= button_n;
+            button_s2_n <= button_s1_n;
+            button_s3_n <= button_s2_n;
+        end if;
+    end process;
+end architecture;
+\end{vhdlcode}
+
+{\itshape (3 marks: 1 for three vector signals declared in terms of \code{COUNT}, 1 for the
+three-stage chain in a clocked process with an asynchronous reset, 1 for the edge expression as a
+concurrent assignment outside the process. Deduct nothing for writing the edge inside the process
+as a registered pulse, provided the candidate says it arrives a cycle later.)\par}
+
+\medskip
+\textbf{Which flip-flops do what.} Stages 1 and 2 are the \textbf{double-flop synchronizer}, so
+\code{button_s2_n} is the stable, safe-to-use current value. Stage 3 stores last cycle's
+\code{button_s2_n} and is the \textbf{edge detector's own} flip-flop; comparing stage 2 against
+stage 3 gives edge detection for free, high for exactly one clock cycle. \worth{1}
+
+\textbf{The reset value: \code{(others => '1')}.} The buttons are active-low, so \code{1} means
+released. Reset the chain to \code{0} and it comes up claiming every button is already held down,
+which is a lie about the world for the two cycles it takes the real level to propagate --- and,
+concretely, a press that is already being held when the reset is released is \textbf{lost}, because
+the chain never sees a high-to-low transition on it. This is the same reason Chapter~\ref{c4:ch}'s
+CircuitVerse drawing ties \code{preset} to \code{1} on these three flip-flops and leaves it alone on
+the reset synchronizer's two. \worth{1}
+
+\textbf{Why \code{reset_s2_n}} --- worth a comment rather than a mark, and the one place a candidate
+reveals whether they know why the port is named as it is. This is a \textbf{subcomponent}. A
+synchronizer does not synchronize its own reset; \code{reset_sync} does that, and the design that
+owns the pin instantiates it. Reading the \code{_s2} as a requirement on the caller is the habit
+worth having, because from Chapter~\ref{c6:ch} on most of what you write is a subcomponent.
+
+\answerpart{b}{3}
+\textbf{The rule: add a generic when something genuinely varies between instances, not on
+principle.} \code{button_sync} is instantiated at \code{COUNT = 1} by \code{led_toggle_sync} and
+\code{walking_led}, and at \code{COUNT = 2} by \code{fsm_led}: two widths, one file, and that second
+instantiation is what makes the generic worth having. \code{reset_sync} is one bit everywhere.
+
+\textbf{What a \code{WIDTH} on \code{reset_sync} would be.} A parameter nobody ever passes anything
+but \code{1} to: pure indirection, and one more thing for a reader to check before they can be sure
+what an instance is. \worth{1}
+
+\textbf{Where \code{COUNT} ends up: nowhere.} It is fixed before a single gate is placed, so it does
+not appear in the built circuit as logic at all. What it did was decide how many flip-flops to
+instantiate and how wide the ports are, and then it was gone --- the same thing that happens to a
+\code{for} loop's bounds in Chapter~\ref{c5:ch}. \worth{1}
+
+\textbf{Flip-flop counts.} Three stages, \code{COUNT} bits each: \code{COUNT = 2} gives \textbf{6}
+flip-flops (plus two inverters and two AND gates for the edge), \code{COUNT = 1} gives \textbf{3}.
+A \code{generic map} itself costs nothing in hardware; it is an elaboration-time decision, not a
+runtime one. \worth{1}
+
+\answerpart{c}{2}
+\textbf{One mechanism explains both.} The chain samples the button once per clock edge, and whether
+that \emph{looks} like debouncing depends entirely on the clock period relative to the bounce time.
+\begin{itemize}
+  \item In CircuitVerse the period is a full second. Bounce settles in far less than that, so every
+    bounce transition happens \textbf{between} two samples and by the next edge the chain reads one
+    clean level. The circuit is not debouncing; it is sampling too infrequently to see bounce.
+  \item At 50\,MHz the period is 20\,ns, and bounce lasts from under a millisecond to a few tens of
+    milliseconds --- many thousands of cycles. The chain faithfully detects \textbf{every} bounce
+    transition as its own edge, so one physical press produces several pulses and the LED toggles
+    several times.
+\end{itemize}
+\noindent\worth{1}
+
+\textbf{What a real debounce adds}, either of:
+\begin{itemize}
+  \item an \textbf{analog RC low-pass filter}, optionally with a Schmitt-trigger buffer, on the
+    input before it reaches the pin: the RC pair smooths the fast make/break transitions into one
+    gradual edge and the Schmitt trigger's two thresholds turn that back into one clean digital
+    transition; or
+  \item a \textbf{digital debounce counter}: require the input to hold a new level for a few
+    milliseconds' worth of clock cycles before accepting it, which builds the artificially slow
+    detection window on-chip without slowing the system clock.
+\end{itemize}
+
+\textbf{Why on top rather than instead.} Even a perfectly debounced signal is still asynchronous to
+your clock: it can still change inside the setup/hold window and still drive a flip-flop
+metastable. Debouncing solves a mechanical problem and synchronizing solves a timing one, and
+neither solves the other. \worth{1}
+
+\answerpart{d}{3}
+\textbf{\code{din} against \code{reset_n} in \code{seq_detect_mealy}.} \code{din} is
+\textbf{synchronous serial data}, already clocked by this clock, so it is not an asynchronous input
+and the rule does not apply to it. Synchronizing it anyway would delay it by two clock cycles and
+shift its timing relative to everything around it --- in a sequence detector that means the machine
+is looking at a different part of the sequence than everything else believes, so the bug is a wrong
+answer rather than a slow one. \code{reset_n} comes from a push button and is asynchronous, so it
+does get a chain. The rule is about where a signal comes from, not about being cautious. \worth{1}
+
+\textbf{\code{reset_s2_n} against \code{reset_n}.} The port name says which side of the boundary
+the module is on:
+\begin{itemize}
+  \item A \textbf{subcomponent} takes \code{reset_s2_n} and never touches a raw asynchronous input.
+    It is a part, and a part is entitled to assume the design around it has done the synchronizing.
+    \code{serial_rx8}, \code{timer}, \code{counter}, \code{sipo8}, \code{piso8} and \code{sync} are
+    all written this way.
+  \item A \textbf{top level} takes \code{reset_n}, because it is the thing holding the pin, and it
+    instantiates \code{reset_sync} itself. \code{walking_led}, \code{blinker}, \code{fsm_led} and
+    both capstones are written that way.
+\end{itemize}
+\noindent\worth{1}
+
+\textbf{What goes wrong if a subcomponent is wired straight to a push button.} The reset is then
+released asynchronously, so the module's flip-flops leave reset on different clock edges. In
+\code{serial_rx8} that is a dozen flip-flops between the shift register and the bit counter, and a
+receiver that starts counting a byte one cycle before it starts shifting one is broken by its own
+reset --- a fault that appears once in a while, at power-on, and never in a testbench that resets
+cleanly. \worth{1}
+
+% ==========================================================================================
+\answersection{5}{Two kinds of update, and a speed limit}{13}
+
+\answerpart{a}{3}
+\begin{booktable}{@{}p{8.2em}LL@{}}
+  & \thead{\code{signal} (\code{<=})} & \thead{\code{variable} (\code{:=})} \\
+  \midrule
+  Declared & The architecture's declarative part & The process's declarative part \\
+  Visible from & Anywhere in the architecture & Only within its own process \\
+  Update timing & \textbf{Scheduled}: applied when the process next suspends &
+    \textbf{Immediate}: applied before the next statement \\
+  Assigned twice in one pass & Only the last survives; earlier ones are discarded & Every one
+    takes effect, in order \\
+\end{booktable}
+\credit{2 marks, or 1 for two of the four rows}
+
+\textbf{The rule of thumb.} Use a \textbf{variable} for a scratch computation consumed entirely
+within one pass: loop accumulators, temporary swaps, an intermediate value handed to a signal at the
+end. Use a \textbf{signal} for anything another process or the outside world reads, and for
+anything that has to hold its value across separate passes --- a counter, a shift register's stored
+bits, the previous value in an edge detector. \worth{1}
+
+\answerpart{b}{4}
+\begin{vhdlcode}
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity ones_count8 is
+    port(bits: in  std_logic_vector(7 downto 0);
+         ones: out natural range 0 to 8);
+end entity;
+
+architecture behaviour of ones_count8 is
+begin
+    COUNT_PROCESS: process(bits) is
+        variable count: natural range 0 to 8;
+    begin
+        count := 0;
+        for i in bits'range loop
+            if (bits(i) = '1') then
+                count := count + 1;
+            end if;
+        end loop;
+        ones <= count;
+    end process;
+end architecture;
+\end{vhdlcode}
+
+{\itshape (3 marks: 1 for a \code{variable} accumulator assigned with \code{:=}, 1 for clearing it
+at the top of every activation, 1 for \code{bits} in the sensitivity list and a single assignment
+to \code{ones} after the loop)\par}
+
+\medskip
+A \code{signal} accumulator here scores none of the three: the assignments schedule rather than take
+effect, so only the last of the nine survives and \code{ones} reports the final bit rather than a
+count.
+
+\textbf{What the range buys.} Two things, one for each tool. It tells \textbf{synthesis} exactly how
+many bits the value needs --- four, for \code{0} to \code{8} --- so the register or the wires are
+sized to the value rather than to whatever an unconstrained \code{natural} would give. And it is a
+\textbf{promise the simulator checks}: \code{natural range 0 to 8} is range-checked, so GHDL aborts
+with a range-check failure at the statement that broke it the instant the count leaves the range.
+
+\textbf{What GHDL would do.} Stop, with an error naming the line, rather than carrying on with a
+wrong number. A \code{std_logic_vector(3 downto 0)} would hold \code{9} through \code{15} quite
+happily and say nothing, which is the difference between a bug that reports itself and one that
+does not. \worth{1}
+
+\answerpart{c}{4}
+\textbf{The three delays} the clock period has to cover on a flip-flop / logic / flip-flop path:
+\begin{enumerate}
+  \item the first flip-flop's \textbf{clock-to-Q} delay, between the edge and its output actually
+    changing;
+  \item the \textbf{combinational delay} through the LUTs and the wires between the two;
+  \item the second flip-flop's \textbf{setup time}.
+\end{enumerate}
+The \textbf{critical path} is the slowest such path in the design, and \textbf{Fmax} is one over
+that total. \worth{2}
+
+\textbf{If the period is too short}, the value has not settled when the second flip-flop samples,
+so it captures something still changing --- and the design does the wrong thing \emph{reliably and
+mysteriously}, which is worse than doing it intermittently, because it looks like a logic bug.
+
+\textbf{Why adding registers can make a design faster.} Splitting a long combinational expression
+so that part of the work happens on one cycle and the rest on the next shortens the longest path,
+and the clock period only has to cover the longest path. It trades \textbf{latency} --- more cycles
+before an answer comes out --- and some flip-flops, for \textbf{throughput}: a faster clock, and
+once the pipeline is full, one result per cycle. That trade is the single most common move in
+high-speed digital design. \worth{1}
+
+\textbf{What Quartus needs before it reports an Fmax.} An \code{.sdc} constraints file with a
+\code{create_clock} on the 50\,MHz input. Without one the timing analyzer has no period to compare
+anything against, so it reports every path as \textbf{unconstrained} and gives no Fmax at all ---
+not an optimistic number, no number. Separately, a design that ``fails timing'' is one where a path
+turned out slower than the period you did declare, which is a different message and a different
+problem.
+
+None of this is part of the book: every design here fits inside 20\,ns with room to spare. Knowing
+the step exists and what it needs is what is examinable. \worth{1}
+
+\answerpart{d}{2}
+\textbf{An uncleared accumulator keeps growing.} The variable is not a fresh local on each
+activation, so a pass that starts by adding to it is adding to the \emph{previous} pass's total.
+Over a long run the count climbs without bound: with a range-constrained type it aborts on a range
+check as soon as it leaves the range, and with an unconstrained one it simply reports a number that
+means nothing. The answer it reports is the running total of every activation since the simulation
+began, not a count over \code{bits}. \worth{1}
+
+\textbf{Why a signal for persistent state anyway.} It is possible to build state with a variable,
+but its updates are immediate rather than scheduled, so it behaves differently from a signal used
+the same way. Question~3(c) is the mirror image: a chain of registers stepping one stage per clock
+edge is exactly what scheduled updates give you for free, and a variable there would collapse the
+chain. A variable is also invisible outside its own process, so no other logic can read it.
+Scheduled updates are what make counters and shift registers work, so if state genuinely has to
+persist \emph{and} be read elsewhere, reach for a signal. \worth{1}
+
+% ==========================================================================================
+% The title is too long for one line: break it ragged, and before its last phrase.
+\answersection{6}{Counting to something that is not a power of two}{12}
+
+\answerpart{a}{4}
+\begin{vhdlcode}
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity counter10 is
+    port(clock, reset_s2_n, enable: in  std_logic;
+         count                    : out natural range 0 to 9);
+end entity;
+
+architecture behaviour of counter10 is
+-- Internal count, because an output port cannot be read back.
+signal count_s: natural range 0 to 9;
+begin
+    count <= count_s;
+
+    COUNT_PROCESS: process(clock, reset_s2_n) is
+    begin
+        if (reset_s2_n = '0') then
+            count_s <= 0;
+        elsif (rising_edge(clock)) then
+            if (enable = '1') then
+                if (count_s >= 9) then
+                    count_s <= 0;
+                else
+                    count_s <= count_s + 1;
+                end if;
+            end if;
+        end if;
+    end process;
+end architecture;
+\end{vhdlcode}
+
+{\itshape (3 marks: 1 for the internal signal and the entity, 1 for the clocked process with the
+asynchronous reset and the enable, 1 for the explicit comparison and clear)\par}
+
+\medskip
+A candidate who writes \code{if (count_s = 9)} rather than \code{>=} loses nothing; \code{>=} is the
+defensive form the book's \code{timer} uses.
+
+\textbf{What would be unnecessary at \code{0 to 15}.} The whole comparison:
+\code{if (count_s >= 9) then count_s <= 0; else ... end if}, leaving
+\code{count_s <= count_s + 1;} on its own.
+
+\textbf{Why exactly those.} \code{15} is \code{2^4 - 1}, so incrementing past it produces a carry
+out of the fourth bit with nowhere to go, and the four bits that survive are \code{0000}. The wrap
+is a consequence of the register's width --- you can point at the bit it ran out of. \code{9} is
+not a power-of-two boundary, so nothing in the hardware returns the count to zero there, and the
+comparison has to say so.
+
+Worth noting, and worth a comment rather than a mark: the book writes the comparison out even at
+\code{0 to 15}, because a VHDL simulator range-checks \code{natural range 0 to 15} and aborts on the
+wrap that the gate network and the chip both perform happily. Anything you intend to verify should
+say what it means. \worth{1}
+
+\answerpart{b}{4}
+\begin{vhdlcode}
+library ieee;
+use ieee.std_logic_1164.all;
+
+architecture behaviour of piso8 is
+signal shift_reg: std_logic_vector(7 downto 0);
+begin
+    -- Bit 7 is always the next bit to leave.
+    serial_out <= shift_reg(7);
+
+    SHIFT_PROCESS: process(clock, reset_s2_n) is
+    begin
+        if (reset_s2_n = '0') then
+            shift_reg <= (others => '0');
+        elsif (rising_edge(clock)) then
+            if (load = '1') then
+                shift_reg <= parallel_in;                  -- Parallel load.
+            elsif (shift = '1') then
+                shift_reg <= shift_reg(6 downto 0) & serial_in;  -- Shift toward the MSB.
+            end if;
+        end if;
+    end process;
+end architecture;
+\end{vhdlcode}
+
+{\itshape (3 marks: 1 for the load branch taking precedence over the shift branch, 1 for the shift
+expression in this book's direction, 1 for tapping bit 7 as the serial output)\par}
+
+\medskip
+What fills the vacated bit 0 is a wiring decision rather than a property of a PISO. Here it is
+\code{serial_in}, so tying that low shifts zeros in behind the byte; \code{walking_led} instead
+wires the bit falling off the top back round to it, which is what turns a one-shot pattern register
+into an endlessly repeating pattern generator.
+
+\textbf{Which bit leaves first: bit 7, the most significant.} Load \code{"10110010"} and
+\code{serial_out} presents \code{1}, \code{0}, \code{1}, \code{1}, \code{0}, \code{0}, \code{1},
+\code{0} over the following cycles.
+
+\textbf{The two things that separate it from a SIPO}, the shift expression being identical in both:
+\begin{enumerate}
+  \item PISO has a \textbf{\code{load} branch}, distinguishing loading a new parallel value from
+    shifting the existing one out. SIPO has nothing to load.
+  \item PISO \textbf{taps \code{shift_reg(7)}} as a one-bit serial output, where SIPO drives the
+    whole vector out in parallel.
+\end{enumerate}
+``SIPO'' and ``PISO'' name how you wire a shift register up, not two kinds of hardware. \worth{1}
+
+\answerpart{c}{2}
+The bit counter now counts \textbf{clock edges} rather than bits, so it loses track of the byte the
+moment the stream pauses.
+
+\begin{narrowtable}{@{}cll@{}}
+  \thead{Edge} & \thead{What arrives} & \thead{\code{bit_count} after} \\
+  \midrule
+  1 & bit 7 & 1 \\
+  2 & bit 6 & 2 \\
+  3 & bit 5 & 3 \\
+  4 & (pause) & 4 \\
+  5 & (pause) & 5 \\
+  6 & (pause) & 6 \\
+  7 & (pause) & 7 \\
+  8 & (pause) & count was already 7: \textbf{\code{data_ready} pulses}, count clears to 0 \\
+\end{narrowtable}
+
+\noindent So \code{data_ready} first pulses on the \textbf{eighth clock edge}, which is the fifth and
+last cycle of the pause, five bits before the byte is complete. \worth{1}
+
+\code{data_out} at that moment holds the shift register's contents: the five reset zeros it started
+with, followed by the three bits that really did arrive --- \code{"00000"} then bits 7, 6 and 5 of
+the byte. And it does not recover: the counter is now permanently out of step with the data, so
+every subsequent ``byte'' is a window of eight clock edges rather than eight bits.
+
+That is why \code{shift_enable} has to gate the counter as well as the shift. With both gated, a gap
+in the stream \textbf{pauses} the receiver mid-byte rather than corrupting it, and it resumes on
+exactly the bit it was waiting for --- which is also what makes the board demonstration possible,
+one press per bit. \worth{1}
+
+\answerpart{d}{2}
+\begin{booktable}{@{}p{7.4em}L@{}}
+  & \thead{What feeds flip-flop \code{i}'s \code{D}} \\
+  \midrule
+  \textbf{Counter} & The adder's sum bit \code{i}: a function of the counter's own bit \code{i} and
+    the carry out of every bit below it. The register's output feeds back into its own input through
+    an adder. \\
+  \textbf{Shift register} & Flip-flop \code{i-1}'s \code{Q}, straight through, with bit 0's
+    \code{D} coming from \code{serial_in}. No arithmetic anywhere. \\
+\end{booktable}
+\credit{1 mark each}
+
+The difference between the two circuits is therefore not in the flip-flops, which are identical,
+and not in the clocking, which is identical. It is entirely in the combinational network between
+one stage's \code{Q} and the next stage's \code{D}: an adder in one case, a plain wire in the other.
+That is the whole of it, and it is why both are ``technically state machines'' while neither is
+what Chapter~\ref{c8:ch} means by one --- the state is a count or a shifted pattern rather than a
+label whose meaning you chose.
+
+% ==========================================================================================
+\answersection{7}{Turning ticks into time}{10}
+
+\answerpart{a}{3}
+\textbf{Cycles.} \code{0.1 s * 50,000,000 cycles/s = 5,000,000} clock cycles.
+
+\textbf{\code{TICK_COUNT}.} The book writes \code{TICK_COUNT = 5_000_000}. The cycle-exact value is
+\code{TICK_COUNT = 4_999_999}, because the internal counter runs \code{0} through \code{TICK_COUNT}
+inclusive, so a full period is \code{TICK_COUNT + 1} cycles. The round number is 1 cycle long in
+5,000,000, which is 0.2\,ppm --- far below the board oscillator's own tolerance, which is why the
+book quotes it. \worth{2}
+
+\textbf{Blink frequency: 5\,Hz.} \code{timeout} fires every 100\,ms, so the LED \textbf{toggles} ten
+times a second; but one blink is on \emph{and} off, so a full cycle takes two timeouts, 200\,ms,
+giving 5\,Hz. The number somebody first writes down is 10\,Hz, which is the timeout rate rather than
+the blink rate. \worth{1}
+
+\answerpart{b}{2}
+\textbf{A freezing enable means the timer resumes rather than restarts.} Whatever was left of the
+period when \code{enable} went low is what is left when it comes back, so the first timeout after
+re-entering the state arrives anywhere between one clock cycle and a full period later, depending on
+where in its count the timer was frozen. A \textbf{clearing} enable would give a full, predictable
+period every time, at the cost of never being able to pause anything.
+
+In \code{fsm_led} the visible consequence is that the first LED toggle after re-entering
+\code{STATE_BLINK} can come almost immediately, so the first blink interval is short. \worth{1}
+
+\textbf{Holding \code{enable} high permanently.} Neither better nor worse for correctness, and it
+does not fix the short first interval: entering \code{STATE_BLINK} would still catch a free-running
+timer at an arbitrary point in its period. What it does buy is a blink phase that is independent of
+the state machine entirely; what it costs is a 26-bit counter switching continuously when nothing
+is reading it, which is power spent on nothing. The freezing enable is the more useful default
+because a design that wants free-running behaviour can always tie \code{enable} high, while a design
+that wants to pause cannot un-clear a clearing timer. \worth{1}
+
+\answerpart{c}{3}
+\begin{vhdlcode}
+library ieee;
+use ieee.std_logic_1164.all;
+
+architecture behaviour of blinker is
+signal reset_s2_n, timeout: std_logic;
+signal enable_always      : std_logic;
+signal led_s              : std_logic;
+begin
+    led           <= led_s;
+    enable_always <= '1';
+
+    -- This is a top level: it owns the pin, so it synchronizes the reset itself.
+    reset_sync1: entity work.reset_sync
+        port map(clock, reset_n, reset_s2_n);
+
+    timer1: entity work.timer
+        generic map(TICK_COUNT)
+        port map(clock, reset_s2_n, enable_always, timeout);
+
+    -- The timeout pulse is an enable on a flip-flop running on the system clock,
+    -- never a clock of its own.
+    LED_PROCESS: process(clock, reset_s2_n) is
+    begin
+        if (reset_s2_n = '0') then
+            led_s <= '0';
+        elsif (rising_edge(clock)) then
+            if (timeout = '1') then
+                led_s <= not led_s;
+            end if;
+        end if;
+    end process;
+end architecture;
+\end{vhdlcode}
+
+{\itshape (3 marks: 1 for \code{reset_sync} instantiated and its \code{reset_s2_n} carried to the
+timer, 1 for \code{timer} with the generic passed through and \code{enable} tied high, 1 for the
+toggle process using \code{timeout} as an enable rather than as a clock)\par}
+
+\medskip
+Tying the literal \code{'1'} directly in the \code{port map} is accepted by GHDL and Quartus and
+loses nothing; the named signal is the form that is unambiguously legal in every tool.
+
+\code{led_s} exists because an output port cannot be read back, and this process reads its own
+output.
+
+\answerpart{d}{2}
+\textbf{Why the synchronizer.} The button is \textbf{asynchronous} to the 50\,MHz clock: a human
+decides when it changes, with no relationship to the clock edge, so it can change inside the
+setup/hold window of the flip-flop sampling it and drive that flip-flop metastable. That the button
+has nothing to do with counting is beside the point --- the rule is about where the signal comes
+from, not what it controls. \worth{1}
+
+\textbf{What the design would do without one.} Two things, and the second is the one that matters.
+The visible symptom is \textbf{bounce}: the raw contacts make and break several times over the first
+millisecond, which at 20\,ns per cycle is many thousands of clock cycles, so the enable would
+flicker on and off many times per press and the timer would start, stop and restart. The real fault
+is \textbf{metastability}: the enable feeds a 26-bit counter and everything downstream of it, and an
+unresolved value reaching several destinations can be read as \code{0} by some and \code{1} by
+others in the same cycle, so parts of the design disagree about whether the timer is running.
+\worth{1}
+
+% ==========================================================================================
+\answersection{8}{The output that arrives a cycle early}{13}
+
+\answerpart{a}{5}
+\begin{vhdlcode}
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity seq_detect_01_mealy is
+    port(clock, reset_n: in  std_logic;
+         din           : in  std_logic;
+         y             : out std_logic);
+end entity;
+
+architecture behaviour of seq_detect_01_mealy is
+-- STATE_HIGH: the previous bit was '1'. Also the reset state, since the line idles high.
+-- STATE_LOW : the previous bit was '0'.
+type state_t is (STATE_HIGH, STATE_LOW);
+
+signal reset_s2_n: std_logic;
+signal state     : state_t;
+begin
+    -- Top level: it owns the reset pin. din is synchronous serial data and is NOT
+    -- synchronized, exactly as in seq_detect_mealy.
+    reset_sync1: entity work.reset_sync
+        port map(clock, reset_n, reset_s2_n);
+
+    STATE_PROCESS: process(clock, reset_s2_n) is
+    begin
+        if (reset_s2_n = '0') then
+            state <= STATE_HIGH;
+        elsif (rising_edge(clock)) then
+            case (state) is
+                when STATE_HIGH =>
+                    if (din = '0') then
+                        state <= STATE_LOW;
+                    else
+                        state <= STATE_HIGH;
+                    end if;
+                when STATE_LOW =>
+                    if (din = '1') then
+                        state <= STATE_HIGH;
+                    else
+                        state <= STATE_LOW;
+                    end if;
+                when others =>
+                    state <= STATE_HIGH;
+            end case;
+        end if;
+    end process;
+
+    -- Mealy output: the current state AND the current input, combinational,
+    -- outside any clocked process.
+    y <= '1' when (state = STATE_LOW and din = '1') else '0';
+end architecture;
+\end{vhdlcode}
+
+{\itshape (3 marks: 1 for a two-value enumerated \code{state_t} with a \code{case} transition
+process and an asynchronous reset, 1 for the transitions, 1 for the output as a
+\textbf{concurrent} conditional assignment reading both \code{state} and \code{din})\par}
+
+\medskip
+\textbf{What the states mean.} \code{STATE_HIGH} is ``the previous bit was \code{1}'',
+\code{STATE_LOW} is ``the previous bit was \code{0}''. That is the entire history a rising-edge
+detector needs, which is why two states are enough. Either reset state is defensible provided the
+candidate says which they chose and why; \code{STATE_HIGH} suits a line that idles high, and means a
+first \code{1} after reset is not reported as an edge.
+
+\textbf{The line that makes it Mealy.}
+
+\begin{vhdlcode}
+y <= '1' when (state = STATE_LOW and din = '1') else '0';
+\end{vhdlcode}
+
+\noindent It reads \code{din}. Move that condition inside the clocked process, or drop \code{din}
+from it, and the machine becomes Moore. Note also that it must have an \code{else}: leave one out
+and you have described a signal that keeps its old value when no condition holds, which is a latch.
+\worth{1}
+
+\textbf{What \code{when others} buys.} In behaviour, nothing: every value of \code{state_t} is
+already named above it, so the branch is unreachable in the source and synthesis normally optimizes
+it away rather than building recovery logic. What it buys is that the \code{case} stays exhaustive
+if a state is added later and a branch is forgotten --- a maintenance property, checked at analysis
+time.
+
+What it is \textbf{not} is a safety net against a corrupted state register. Once Quartus re-encodes
+the machine, most bit patterns are illegal, and recovering from one needs Quartus's Safe State
+Machine setting rather than anything you can write in VHDL. \worth{1}
+
+\answerpart{b}{2}
+\textbf{Why one more state.} A Moore output may not read \code{din}, so ``a rising edge just
+happened'' has to be recorded in the state itself before the output can report it. That means a
+third state, entered on the \code{0} to \code{1} transition, existing purely to hold the output high
+for one cycle --- exactly the \code{M_TWO} of the book's own Moore-versus-Mealy comparison in
+\secref{c8:a5}.
+
+\textbf{What its output does differently.} It arrives \textbf{one clock cycle later}, and it comes
+off a register rather than out of a gate, so it cannot follow a noisy input and, if the output is
+registered, cannot glitch. \worth{1}
+
+\textbf{Which to reach for: Moore, by default.} Its output depends on no primary input, so it cannot
+follow one; a Mealy output can in principle glitch combinationally if its inputs are not already
+clean; and a machine whose output depends on fewer things is a machine with fewer ways to be wrong.
+It is what the rest of this book uses. Reach for Mealy only when you specifically need the lower
+latency or the smaller state count, and know you are trading a synchronous output for a
+combinational one when you do. \worth{1}
+
+Credit an answer that adds that ``Moore'' alone does not mean glitch-free: an output decoded
+combinationally from several state bits can still glitch while they skew, and what makes an output
+glitch-free is registering it.
+
+\answerpart{c}{4}
+\textbf{Cycles per bit and per tick.}
+
+\begin{console}
+one bit period  = 50,000,000 / 9600 = 5208.33 clock cycles
+one sixteenth   = 5208.33 / 16      =  325.52 clock cycles
+\end{console}
+\noindent\worth{1}
+
+\textbf{The two candidates.} The timer pulses every \code{TICK_COUNT + 1} cycles, so the target is
+\code{TICK_COUNT + 1 = 325.52}, that is \code{TICK_COUNT = 324.52}, which is not a whole number:
+
+\begin{narrowtable}{@{}ccl@{}}
+  \thead{\code{TICK_COUNT}} & \thead{Cycles per tick} & \thead{Error against 325.52} \\
+  \midrule
+  324 & 325 & 0.52 cycles short, \textbf{$-$0.16\%} \\
+  \textbf{325} & \textbf{326} & 0.48 cycles long, \textbf{+0.15\%} \\
+\end{narrowtable}
+
+\noindent The default is \textbf{325}, and the reason is simply that 326 is the closer of the two:
+\code{|326 - 325.52|} is \code{0.48} against \code{|325 - 325.52|} = \code{0.52}. Both would work;
+neither is exact, because 9600\,baud does not divide 50\,MHz. \worth{1}
+
+\textbf{Why sample mid-bit.} The transmitter runs off a different physical crystal, so the two
+clocks drift apart across a frame, and the receiver's idea of where a bit starts came from one
+falling edge it inferred rather than from a clock line it was given. Sampling at the middle leaves
+half a bit of margin on \textbf{each} side; sampling near a boundary reads the neighbouring bit as
+soon as the two drift at all, or as soon as the line's own edges are anything but instantaneous.
+What is being tolerated is frequency error between the two crystals, plus the fraction of a tick of
+phase error left over by never stopping the timer. \worth{1}
+
+\textbf{The drift.} Ten bit periods is 160 oversample ticks. The receiver's 160 ticks take
+\code{160 * 326 = 52,160} clock cycles; ten true bit periods are \code{10 * 5208.33 = 52,083}
+cycles. The difference is about \code{77} cycles, which is \code{77 / 325.52 = 0.24} of an
+oversample tick.
+
+The margin it started with is \textbf{8 ticks}, half a bit period. So the sample point has drifted
+about \textbf{3\% of its margin} by the stop bit, which is why the answer is comfortable and why
+resynchronizing on every start bit is enough: the error never gets ten bit periods to accumulate
+over more than once. \worth{1}
+
+\answerpart{d}{2}
+\textbf{During the break}, a level test re-arms the instant the previous frame's stop bit is judged.
+The line is low, so the receiver reads it as a start bit immediately and marches through
+back-to-back all-zero frames for as long as the break lasts. Each of those ends on a low stop bit
+and is correctly rejected as a framing error, and \textbf{that part is fine}: nothing is handed
+over. \worth{1}
+
+\textbf{At the moment the break ends}, one frame is already in flight, and its stop bit is sampled
+after the line has returned high. So it is a perfectly well-formed frame as far as the receiver can
+tell: correct framing, high stop bit, and a byte made of nothing handed over as real data.
+
+That last frame is the one that matters because it is the only one that \textbf{passes}. Every
+other frame during the break is rejected, so a design that gets this wrong looks correct right up to
+the moment a cable is unplugged and plugged back in, and then delivers one plausible byte that was
+never sent.
+
+The \textbf{edge} test does not re-arm during the break at all: after the first falling edge there
+is not another one until the line has recovered. It costs one flip-flop of history, and that is the
+whole difference. \worth{1}
+
+% The marks tag as vhdlbook.sty sets it, for what follows.

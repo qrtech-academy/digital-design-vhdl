@@ -1,0 +1,112 @@
+% Short answers to Chapter 5's exercises, lectures/L05/appendix/b_exercises.md.
+
+\answerchapter{c5:ch}
+
+\answer{c5:ex:1}{Tracing the signal accumulator}
+\pt{a}\begin{tabular}[t]{@{}l@{\quad}c@{\quad}*{8}{c}@{}}
+  \code{i} & \code{<= '0'} & 7 & 6 & 5 & 4 & 3 & 2 & 1 & 0 \\
+  \midrule
+  \code{bits(i)} & -- & 1 & 0 & 1 & 1 & 0 & 1 & 1 & 0 \\
+  read & -- & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+  scheduled & 0 & 1 & 0 & 1 & 1 & 0 & 1 & 1 & 0 \\
+  survives & no & no & no & no & no & no & no & no & yes \\
+\end{tabular}
+\pt{b}\code{parity_s} ends at \code{'0'}. The correct parity is \code{'1'}: \code{"10110110"} has
+five \code{1}s. Every read in the pass returns the same frozen pre-pass value, and each assignment
+replaces the one scheduled before it, so no iteration ever sees another's result and only the last,
+\code{old_parity xor bits(0)}, survives.
+\pt{c}\begin{tabular}[t]{@{}l@{\quad}*{8}{c}@{}}
+  \code{i} & 7 & 6 & 5 & 4 & 3 & 2 & 1 & 0 \\
+  \midrule
+  \code{bits(i)} & 1 & 0 & 1 & 1 & 0 & 1 & 1 & 0 \\
+  \code{acc} before & 0 & 1 & 1 & 0 & 1 & 1 & 0 & 1 \\
+  \code{acc} after & 1 & 1 & 0 & 1 & 1 & 0 & 1 & 1 \\
+\end{tabular}\par\smallskip
+\noindent Each iteration reads the value the previous one wrote, and \code{parity} ends at the
+correct \code{'1'}.
+
+\answer{c5:ex:3}{Counting set bits}
+\ptnote{Signal accumulator}The testbench stops at that input, \code{expected 1, got 2}. Every read
+of the signal in the pass returns \code{1}, the count left by the previous input \code{00000001}; the
+last assignment that runs, at \code{i = 1}, schedules \code{1 + 1}, and it is the one that survives.
+\ptnote{Adders and cycles}Eight adders, one per unrolled iteration, chained (and then packed into
+LUTs), and no clock cycles at all: the process is combinational and the count settles within one
+propagation delay.
+\ptnote{The range}It tells synthesis the value needs only four bits, and it is a promise the
+simulator checks: if the count ever left \code{0 to 8}, GHDL would stop with a bound-check failure
+at the offending line, where a \code{std_logic_vector(3 downto 0)} would hold \code{9} to \code{15}
+without a word.
+
+\answer{c5:ex:4}{A synchronizer module}
+\pt{b}\begin{itemize}
+  \item That every button is being held down, until the real released level arrives.
+  \item The line falling low straight after reset: a start bit, so the receiver would start
+    receiving a frame that was never sent.
+  \item \code{'0'} is a flip-flop's ordinary reset value, as in every other reset in the book, but no
+    default can know what a signal means: both real users override it, so getting \code{PRESET}
+    right is the instantiating design's job, and it should always pass it explicitly.
+\end{itemize}
+\pt{c}Eight flip-flops at \code{SIZE = 4}, two at \code{SIZE = 1}. \code{PRESET} ends up as each
+flip-flop's reset value, whether its asynchronous reset clears or presets it. Both generics were
+used up before synthesis placed anything: \code{SIZE} decided how many flip-flops to build and how
+wide the ports are, \code{PRESET} how each one resets.
+
+\answer{c5:ex:5}{What Quartus does to your VHDL}
+\pt{a}\begin{itemize}
+  \item It is the root of the design: its ports become the chip's pins, and every other entity is
+    built only where it is instantiated beneath it.
+  \item The testbench has no ports to put on pins, and its body (timed waits, assertions, reports)
+    describes a simulation, not hardware, so it cannot be synthesized; only \code{min_of_two} can.
+\end{itemize}
+\pt{b}\begin{itemize}
+  \item The pins are an input to fitting: placement, routing and the programming file are all made
+    for them, and a \file{.sof} compiled before a change is not patched afterwards.
+  \item To whatever pins the fitter picked on its own, not the LEDs you meant; some project settings
+    refuse to fit unassigned pins at all.
+\end{itemize}
+\pt{c}\begin{itemize}
+  \item The same circuit for both, one four-input LUT holding the truth table of
+    \code{x = ab + c'd}: the internal signal only names a wire, and synthesis builds the function,
+    not the text.
+  \item At two terms, honestly either; the named version pulls ahead as soon as the expression
+    outgrows one line, and the habit is worth having before you need it.
+\end{itemize}
+\pt{d}\begin{itemize}
+  \item A clean C build does what the code says; legal VHDL can still describe hardware you did not
+    mean, such as a latch, a combinational loop, an unassigned pin or an incomplete sensitivity list,
+    and Quartus reports all of those as warnings.
+  \item An inferred latch.
+\end{itemize}
+
+\answer{c5:ex:6}{Predicting parity}
+\pt{a}\code{"00000000"}: \code{'0'}; \code{"10110110"}: \code{'1'}; \code{"11111111"}: \code{'0'};
+\code{"10000000"}: \code{'1'}.
+\pt{b}It sweeps all 256 inputs, these four among them, and prints only
+\code{parity_gen: all checks passed!}.
+\pt{c}\begin{itemize}
+  \item It inverts.
+  \item Parity is the XOR of all eight bits, and XORing in a flipped bit complements the result:
+    the number of \code{1}s changes by exactly one, so odd becomes even or even odd.
+  \item An even number of flipped bits, two for instance: each inverts the parity, so the second
+    undoes the first and the parity still matches.
+\end{itemize}
+
+\answer{c5:ex:7}{Reviewing a latched decoder}
+\pt{a}A latch on each of the four bits of \code{leds}. The \code{when others} branch assigns
+nothing, so on that path VHDL requires \code{leds} to keep its old value; remembering is something
+combinational logic cannot do, so a latch is the only thing the tool can build.
+\pt{b}\begin{itemize}
+  \item \code{sel} is a \code{std_logic_vector}, each bit with nine values, so \code{when others}
+    matches 78 of the 81 values it can hold (\code{'U'} before it is driven, \code{'X'}, \code{'Z'}
+    and the rest), not just \code{"11"}.
+  \item The latch is inferred from the code, not from the values that occur: the process still has
+    a path that leaves \code{leds} unassigned, so the tool builds the latch whatever \code{sel}
+    does, and the design contains storage nobody asked for.
+\end{itemize}
+\pt{c}In the branch, \code{when others => leds <= "0000";}. Before the \code{case}, the default
+\code{leds <= "0000";}. The second is easier to maintain: the default covers every path, including
+branches added later, where the first has to be got right again each time the \code{case} grows.
+Both give the same combinational logic.
+\pt{d}An error stops you; a warning lets the design through, and because the latch usually holds the
+right value the design appears to work, so the bug ships and surfaces later as an intermittent
+fault in a design that ``compiled cleanly''.

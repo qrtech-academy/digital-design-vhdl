@@ -1,0 +1,3 @@
+# What the LuaLaTeX build writes on its way to the PDF: the logs, the auxiliary files and the
+# rendered figures. The PDF itself, book/digital-design-vhdl.pdf, is committed.
+build/

@@ -1,0 +1,141 @@
+% Short answers to Chapter 4's exercises, lectures/L04/appendix/b_exercises.md.
+
+\answerchapter{c4:ch}
+
+\answer{c4:ex:1}{Metastability in your own words}
+An input changing inside the setup/hold window can leave the flip-flop's cross-coupled feedback
+loop balanced between its two stable states, so its output sits at a voltage that is neither a
+valid \code{0} nor a valid \code{1}. It resolves on its own, but how long that takes depends on how
+nearly balanced it was left, which nobody controls and which differs every time. Until it resolves,
+each downstream gate reads the voltage against its own threshold, so one can see \code{0} and
+another \code{1} at the same instant, and the parts of the circuit they feed act on different
+values: a counter increments in one place and not another, a state machine lands in an impossible
+state.
+
+\answer{c4:ex:2}{The setup-and-hold window}
+A synchronous signal is launched by an edge of the same clock, so it arrives a fixed, known delay
+after that edge and can be designed to settle before the next edge's window. A pushbutton changes
+whenever a person presses it, with no relation to the clock's phase, so over enough presses some
+changes will fall inside the window however the logic around it is built. The risk therefore cannot
+be designed away, only contained: by giving the unresolved value time to settle before anything
+uses it.
+
+\answer{c4:ex:3}{Drawing a double-flop synchronizer}
+\code{FF1} samples the asynchronous input directly, so it is the stage whose input can change inside
+its window and go metastable. Its output has a whole clock period to resolve before \code{FF2}
+samples it, and the chance of still being unresolved shrinks exponentially with that time, so
+\code{FF2} goes wrong only in the rare case where \code{FF1} stayed unresolved for the whole period;
+that is why only \code{FF2}'s output is used. The residual probability is not zero, but the
+resulting mean time between failures is so long (far beyond the product's life, at these speeds)
+that the risk is acceptable.
+
+\answer{c4:ex:4}{A third synchronizer stage}
+\pt{a}It turns on the required mean time between failures against the failure rate this input
+produces. A third stage wins when two stages do not give an MTBF comfortably beyond what is
+required: a fast-changing input, a flip-flop with poor metastability characteristics, or a failure
+that must essentially never happen. Two stages are enough when their MTBF already exceeds the
+requirement by orders of magnitude, and then the third only costs a cycle of latency and a
+flip-flop per input.
+\pt{b}\begin{itemize}
+  \item A frequently changing input (high \code{f_data}) lowers MTBF in proportion and pushes
+    towards a third stage; a button pressed once a second pushes away from it.
+  \item A family with a slow decay (large \code{tau}) or a wide window (\code{T_w}) lowers MTBF and
+    pushes towards a third stage; \code{tau} sits in the exponent, so it matters most.
+  \item A costly failure (safety, money) raises the MTBF you need, pushing towards a third stage; a
+    demo LED does not.
+\end{itemize}
+\pt{c}Two stages: a button changing a few times a second already gives an astronomically long MTBF,
+and a third stage buys nothing but latency. A third stage is worth arguing for on, say, an
+asynchronous line toggling at around 10\,MHz in a braking controller, where \code{f_data} and the
+cost of a failure do the work.
+
+\answer{c4:ex:5}{Assert async, release sync}
+\ptnote{Assertion}Both stages go low the instant \code{reset_n} does, without waiting for an edge.
+That matters when the clock is stopped (the edge never comes), unstable (its edges cannot be
+trusted, as at power-up), or when the system must reach its safe state at once.
+\ptnote{Recovery and removal}Releasing an asynchronous reset is itself an asynchronous change: if
+the release lands inside the window around a clock edge, the flip-flop may leave reset on that edge
+or the next, or go metastable.
+\ptnote{Synchronous release}The design sees the release only through the two-flop chain, so
+\code{reset_s2_n} rises just after a clock edge, a full period clear of the next; every flip-flop
+sees the same clean release and leaves reset on the same edge, so no two of them can disagree for a
+cycle about the state.
+
+\answer{c4:ex:6}{\code{led_toggle_sync} by hand}
+\pt{e}\begin{itemize}
+  \item No. The first edge only loads the press into \code{button_s1_n}.
+  \item Two edges: on the second, \code{button_s2_n} goes to \code{0} while \code{button_s3_n} still
+    holds \code{1}, so \code{button_edge_s2} is \code{1} for one cycle. The LED toggles on the third
+    edge, the same edge that ends the pulse.
+  \item Yes: a small, fixed latency, two edges through the synchronizer and one more for the toggle
+    flip-flop, as \secref{c4:a3} and \secref{c4:a9} predict.
+\end{itemize}
+
+\answer{c4:ex:7}{Synchronized is not debounced}
+\pt{a}Synchronization and edge detection; not debouncing.
+\pt{b}No more than one sampling edge fell inside the bounce, so the samples went from released to
+pressed exactly once and the chain saw one clean transition. The design controls only its sampling
+(the clock period), not the bounce, which the switch decides; with a 1\,s period a 1\,ms bounce
+almost always fits between two edges, but nothing in the circuit makes it.
+\pt{c}\begin{itemize}
+  \item At most once, and usually not at all: about one press in a thousand has an edge inside the
+    bounce.
+  \item 1\,ms\,/\,20\,ns $= 50\,000$ times.
+  \item Every sampled bounce is a fresh falling edge, so the LED toggles several times for one press
+    and ends on or off unpredictably. In CircuitVerse the whole bounce fell between two edges a
+    second apart and was never seen.
+\end{itemize}
+\pt{d}Hardware: an RC low-pass filter smooths the bounce into one slow edge, and a Schmitt-trigger
+input turns that into a single clean transition. Digital: after the synchronizer, accept a new level
+only once it has held for a few milliseconds' worth of cycles, restarting the count on any change;
+or, with Chapter~\ref{c7:ch}'s timer, ignore further edges for a fixed interval after a press.
+\pt{e}Debouncing removes the extra transitions but not the asynchrony: the debounced signal still
+changes with no relation to the clock and can still land inside a flip-flop's setup/hold window, so
+metastability still needs the double-flop chain.
+
+\answer{c4:ex:8}{The reset synchronizer}
+\pt{b}The reset branch forces the in-reset value, \code{'0'}, at once, while the clocked branch
+shifts in the released value, \code{'1'}, which is how the release reaches the output: one branch
+asserts the reset and the other releases it.
+\pt{d}\begin{itemize}
+  \item \code{s2} says the signal is the output of the second flip-flop of a two-flop synchronizer;
+    the name would become wrong if the number of stages changed, say to three.
+  \item Some module has to take the raw asynchronous reset, because a synchronized one does not
+    exist until it has made it. Exactly one does, so that every flip-flop in the design is released
+    by the same \code{reset_s2_n} on the same edge; two reset synchronizers could release on
+    different edges.
+\end{itemize}
+
+\answer{c4:ex:9}{The button synchronizer}
+\pt{b}\begin{itemize}
+  \item No. From all-zeros, the released level moves through as \code{s1 s2 s3} $=$ \code{000},
+    \code{100}, \code{110}, \code{111}, and \code{(not s2) and s3} is \code{0} at every step: the
+    chain sees a release, and a release does not pulse.
+  \item All-ones: one pulse, two edges after the reset releases. All-zeros: no pulse at all, because
+    the chain already reads ``pressed'' and never sees a falling edge. All-ones is the one you want:
+    the press is real, and all-zeros silently loses it.
+\end{itemize}
+\pt{d}\begin{itemize}
+  \item An out-of-range width, above all \code{COUNT = 0} with its null-range ports, is rejected
+    when the design is elaborated instead of being built into something meaningless, and the
+    interface states the widths the module is meant for.
+  \item Chapter~\ref{c8:ch}'s \code{seq_detect_mealy}, which has no button but still needs its
+    reset synchronized. Merged, it would have had to instantiate the whole module and disable the
+    button half it does not use.
+\end{itemize}
+
+\answer{c4:ex:10}{Two synchronized LED toggles}
+\pt{c}Two synchronizer flip-flops bring the press to \code{button_s2_n} on the second edge, where
+the edge pulse goes high, and the LED flip-flop takes it on the third. An extra pipeline stage would
+move the toggle to the fourth edge, and the testbench, which expects the toggle on the third, fails
+it.
+\pt{d}\begin{itemize}
+  \item It makes each press safe from metastability, but does nothing about bounce: at 50\,MHz every
+    bounce is still its own pulse, so one press can still toggle the LED several times.
+  \item A physical button is asynchronous to the 50\,MHz clock, and the raw one reached two
+    flip-flops on the same edge, \code{button_prev_n} directly and \code{led_s} through the edge
+    logic; a press inside the setup/hold window could leave either metastable, or be read as pressed
+    by one and released by the other, losing the toggle or doubling it.
+  \item Metastability: a simulated flip-flop always captures a clean \code{'0'} or \code{'1'}.
+    Bounce, by contrast, a testbench could at least imitate by driving a burst of transitions.
+\end{itemize}

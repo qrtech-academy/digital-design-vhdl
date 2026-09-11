@@ -1,0 +1,421 @@
+% Appendix: Paper A, from exam/paper_a.md. The questions only; the model answers are a separate
+% appendix, as they are a separate file, so the paper can be sat without them in view.
+
+\chapter{Self-Assessment Paper A}
+\label{exa:ch:paper}
+
+\noindent\textbf{Time:} 3 hours. \textbf{Closed book.} A basic calculator is permitted.
+\textbf{Total: 100 marks.}
+
+This paper exists to test your own skills and knowledge. It is not a qualification and it gates
+nothing. It draws on all eight chapters, so \textbf{it is meant to be taken once you have finished
+the book}, after Chapter~\ref{c8:ch} and the two capstones. The model answers are in
+Appendix~\ref{ansa:ch:answers}.
+
+\section*{Rubric}
+\textbf{VHDL is the subject, so you write it here.} Every listing you produce is VHDL-93 using
+\code{ieee.std_logic_1164}, and \code{ieee.numeric_std} where a conversion needs it. Write the
+\code{library} and \code{use} clauses out at least once; after that they are assumed.
+
+\textbf{Syntax is not what is being marked. Hardware is.} A missing semicolon or a forgotten
+\code{is} costs nothing. A process that describes a latch where you meant a wire, or a chain of
+flip-flops where you meant one, costs that part in full, because that is a different circuit.
+
+\textbf{The book's conventions are the ones expected}, and a design that breaks one should say why:
+\begin{itemize}
+  \item Vectors are declared \code{downto}, and \code{port map} is positional.
+  \item An active-low signal is named with an \code{_n} suffix; a signal that has been through a
+    two-flop synchronizer is named with an \code{_s2} suffix.
+  \item A \textbf{subcomponent} takes \code{reset_s2_n} and never touches a raw asynchronous input.
+    A \textbf{top level} takes \code{reset_n} and instantiates \code{reset_sync} itself.
+  \item Shift registers shift toward the most significant bit.
+\end{itemize}
+
+\textbf{Where a question asks what the toolchain builds, answer in hardware}, not in code. ``It
+assigns \code{x}'' is not an answer to ``what does synthesis produce''.
+
+\textbf{Where a question asks for a truth table or a state table, give every row.} A Karnaugh map
+group has to be written down as a term; circling it in the air scores nothing.
+
+\subsection*{Supplied constants and formulas}
+
+\begin{narrowtable}{@{}ll@{}}
+  \thead{Quantity} & \thead{Value} \\
+  \midrule
+  DE0-CV system clock & 50\,MHz \\
+  DE0-CV system clock period & 20\,ns \\
+  Synchronizer mean time to failure & \code{MTBF = e^(t_r / tau) / (T_w * f_clock * f_data)} \\
+\end{narrowtable}
+
+\subsection*{Marks}
+
+\begin{narrowtable}{@{}lcccccccc@{}}
+  \thead{Question} & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 \\
+  \midrule
+  \thead{Marks} & 12 & 14 & 13 & 13 & 13 & 12 & 10 & 13 \\
+\end{narrowtable}
+
+% ------------------------------------------------------------------------------------------
+\question{A table, a network, and a module}{12}
+\label{exa:q:1}
+
+\qpart{a} A function \code{X} of three inputs \code{A}, \code{B}, \code{C} is specified by this
+table:
+
+\begin{narrowtable}{@{}cccc@{}}
+  \thead{A} & \thead{B} & \thead{C} & \thead{X} \\
+  \midrule
+  0 & 0 & 0 & 0 \\
+  0 & 0 & 1 & 0 \\
+  0 & 1 & 0 & 1 \\
+  0 & 1 & 1 & 0 \\
+  1 & 0 & 0 & 1 \\
+  1 & 0 & 1 & 0 \\
+  1 & 1 & 0 & 1 \\
+  1 & 1 & 1 & 1 \\
+\end{narrowtable}
+
+\noindent Read a sum-of-products equation straight off the table. Then simplify it by Boolean
+algebra alone, naming the law used at each step, and count the gates the minimized equation needs
+against the gates the unsimplified one needs. \worth{4}
+
+\qpart{b} Every button and every reset in this book is active-low. A design carries
+\code{button_n} and \code{enable_n}, both active-low, and must drive an active-high \code{go}, true
+exactly when both are asserted.
+
+Give the Boolean expression for \code{go}, apply De Morgan to it, and name the \textbf{single} gate
+that implements the result. Then give both VHDL forms of the assignment, and state what synthesis
+produces for each. \worth{3}
+
+\qpart{c} Write the complete, synthesizable VHDL module for your minimized \code{X} from (a):
+entity \code{gate_net}, inputs \code{a}, \code{b}, \code{c}, output \code{x}, all \code{std_logic},
+declared in that order. Include the \code{library} and \code{use} clauses, and state what they buy
+you. \worth{3}
+
+\qpart{d} \code{x <= a or b;} is a concurrent assignment. State what it describes and why it is
+not a statement that runs once. Then state what a signal sitting at \code{'U'} and a signal sitting
+at \code{'X'} each tell you, and why neither is a value. \worth{2}
+
+% ------------------------------------------------------------------------------------------
+\question{The map, the multiplexer, and the module used twice}{14}
+\label{exa:q:2}
+
+\qpart{a} A function \code{X} of four inputs \code{A}, \code{B}, \code{C}, \code{D}:
+
+\begin{narrowtable}{@{}ccccc@{\hspace{2.5em}}ccccc@{}}
+  \thead{A} & \thead{B} & \thead{C} & \thead{D} & \thead{X} &
+    \thead{A} & \thead{B} & \thead{C} & \thead{D} & \thead{X} \\
+  \midrule
+  0 & 0 & 0 & 0 & 1 & 1 & 0 & 0 & 0 & 1 \\
+  0 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 1 & 0 \\
+  0 & 0 & 1 & 0 & 1 & 1 & 0 & 1 & 0 & 1 \\
+  0 & 0 & 1 & 1 & 0 & 1 & 0 & 1 & 1 & 0 \\
+  0 & 1 & 0 & 0 & 0 & 1 & 1 & 0 & 0 & 0 \\
+  0 & 1 & 0 & 1 & 1 & 1 & 1 & 0 & 1 & 1 \\
+  0 & 1 & 1 & 0 & 0 & 1 & 1 & 1 & 0 & 0 \\
+  0 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
+\end{narrowtable}
+
+\noindent Draw the Karnaugh map with \code{AB} down the rows and \code{CD} across the columns, both
+in Gray-code order. Mark your groups, give the minimized sum-of-products equation, and state for
+each group which cells it covers and which variables survive.
+
+Then say how many AND-terms a direct Chapter~\ref{c1:ch}-style reading of the table would have
+given, name the two inputs that do not appear in your answer at all, and state which \textbf{single
+gate} realizes the whole function. \worth{5}
+
+\qpart{b} Write the architecture of a 4-to-1 multiplexer:
+
+\begin{vhdlcode}
+entity mux4 is
+    port(inputs: in  std_logic_vector(3 downto 0);
+         sel   : in  std_logic_vector(1 downto 0);
+         x     : out std_logic);
+end entity;
+\end{vhdlcode}
+
+\noindent Selector \code{"00"} routes \code{inputs(3)}, \code{"01"} routes \code{inputs(2)},
+\code{"10"} routes \code{inputs(1)} and \code{"11"} routes \code{inputs(0)}, matching this book's
+\code{mux_8to1}.
+
+Then answer: why can the \code{case} statement not appear directly in the architecture body, and
+what does \code{when others} protect you against given that a two-bit selector ``can only'' hold
+four values? \worth{4}
+
+\qpart{c} The same entity again, built structurally. A 2-to-1 multiplexer is available:
+
+\begin{vhdlcode}
+entity mux2 is
+    port(a, b, sel: in  std_logic;
+         x        : out std_logic);
+end entity;
+\end{vhdlcode}
+
+\noindent with \code{x = a} when \code{sel = '1'} and \code{x = b} when \code{sel = '0'}.
+
+Write an architecture \code{structure} for \code{mux4} that uses \textbf{three} instances of
+\code{mux2} and no logic of its own. Then state how many copies of \code{mux2}'s logic the FPGA ends
+up with, and whether your architecture and part (b)'s describe the same hardware. \worth{3}
+
+\qpart{d} This book writes every \code{port map} positionally. State what happens when an entity
+declares its ports in a different order from the one its testbench expects, distinguishing the case
+where the misplaced ports have different types from the case where they have the same type, and say
+\textbf{when} you find out in each case. \worth{2}
+
+% ------------------------------------------------------------------------------------------
+\question{What a clock edge does, and when an assignment happens}{13}
+\label{exa:q:3}
+
+\qpart{a} Distinguish the D latch from the D flip-flop: state the condition under which each
+changes its output, and why synchronous designs are built almost entirely from the flip-flop.
+
+Then: \code{D} rises and falls again entirely between two rising clock edges. State what \code{Q}
+does in each of the two, and why. \worth{3}
+
+\qpart{b} A clocked process:
+
+\begin{vhdlcode}
+process(clock) is
+begin
+    if (rising_edge(clock)) then
+        c <= b;
+        b <= a;
+    end if;
+end process;
+\end{vhdlcode}
+
+\noindent\code{b} and \code{c} both hold \code{'0'} before the first edge. \code{a} carries these
+values at the six rising edges:
+
+\begin{narrowtable}{@{}lcccccc@{}}
+  \thead{Edge} & \thead{1} & \thead{2} & \thead{3} & \thead{4} & \thead{5} & \thead{6} \\
+  \midrule
+  \code{a} & 1 & 0 & 1 & 1 & 0 & 0 \\
+\end{narrowtable}
+
+\noindent Give \code{b} and \code{c} after each of the six edges. State how much hardware this
+process describes, what happens if the two lines are swapped, and the rule that decides all of it.
+\worth{4}
+
+\qpart{c} Write the VHDL for a rising-edge detector on an active-high input \code{req}, producing
+\code{req_edge}, using one flip-flop and one gate. Include the asynchronous active-low reset.
+
+Then state exactly how long \code{req_edge} is high and why, and say why its stored previous value
+resets to \code{'0'} here where \code{led_toggle}'s resets to \code{"11"}. \worth{3}
+
+\qpart{d} State the rule for a synchronous process's sensitivity list, and give the reason behind
+it. Then say what changes, in simulation and in the built hardware, if a designer:
+\begin{itemize}
+  \item adds \code{d} to the list of a flip-flop process, and
+  \item leaves \code{reset_n} out of the list of a process with an asynchronous reset.
+\end{itemize}
+\worth{3}
+
+% ------------------------------------------------------------------------------------------
+\question{The input you do not control}{13}
+\label{exa:q:4}
+
+\qpart{a} State what a flip-flop's setup time and hold time are, what happens inside the flip-flop
+when an input changes inside that window, and why an asynchronous input can never be promised to
+avoid it.
+
+Then a sharper point: sampling a signal in the middle of a transition and getting either level back
+is \textbf{not} the failure. Say what the actual failure is, and why. \worth{3}
+
+\qpart{b} Draw the double-flop synchronizer and state which flip-flop's output the rest of the
+design may use, and why the other one's must not be.
+
+Then read the supplied \code{MTBF} expression: name what each of \code{t_r}, \code{tau},
+\code{T_w}, \code{f_clock} and \code{f_data} is. A design has two asynchronous inputs, a push
+button pressed about once a second and a line from another clock domain toggling at 10\,MHz, and
+both go through a two-flop chain. State which of the two makes the case for a third stage, by how
+many orders of magnitude, and what the third stage costs. \worth{4}
+
+\qpart{c} Write \code{reset_sync}: the reset synchronizer, entity and architecture, with ports
+\code{clock}, \code{reset_n} (in) and \code{reset_s2_n} (out), declared in that order.
+
+Name the pattern it implements, state what each half of that pattern does, and say what goes wrong
+in a design of a dozen flip-flops if the second half is left out. \worth{3}
+
+\qpart{d} A colleague has a 4-bit counter crossing from another clock domain. They put each bit
+through its own double-flop synchronizer and use the four synchronized bits as a number.
+
+State what is safe about this and what is not. Give a concrete value the receiving domain can read
+that the counter never held, naming the transition that produces it. Then name the three standard
+fixes and say which one removes the problem by construction rather than by handshaking around it.
+\worth{3}
+
+% ------------------------------------------------------------------------------------------
+\question{The accumulator that isn't, and the latch nobody asked for}{13}
+\label{exa:q:5}
+
+\qpart{a} A colleague writes an entity \code{any_set}, driving \code{found} high when any bit of
+\code{bits} is \code{'1'}. It compiles, and it is wrong:
+
+\begin{vhdlcode}
+architecture broken of any_set is
+signal any_s: std_logic;
+begin
+    found <= any_s;
+
+    process(bits) is
+    begin
+        any_s <= '0';
+        for i in bits'range loop
+            any_s <= any_s or bits(i);
+        end loop;
+    end process;
+end architecture;
+\end{vhdlcode}
+
+\noindent Assume \code{bits} has the range \code{7 downto 0}, \code{bits = "01000000"}, and
+\code{any_s} holds \code{'0'} before the process runs.
+
+Trace the pass. For the initial assignment and every iteration, give the index, the value read from
+\code{any_s}, the value scheduled, and whether that scheduled assignment survives. Give the value
+\code{found} ends up with, give the correct answer, and state why repeatedly assigning a signal does
+not build an accumulator.
+
+Then, the part that makes this bug dangerous: characterize \textbf{every} input for which this
+architecture happens to produce the right answer. \worth{4}
+
+\qpart{b} Rewrite the architecture correctly, and answer: the loop runs eight times, so how many
+clock cycles does the fixed design take to produce an answer, and how much storage does your
+accumulator cost? Justify both. \worth{3}
+
+\qpart{c} Nothing on an FPGA becomes a gate. State what a Boolean function becomes instead, name the
+two things the fabric is made of, and name the unit Quartus counts on the DE0-CV's Cyclone~V.
+
+Then use that to say what your Karnaugh map in Question~\ref{exa:q:2} actually bought you on this
+board, and what it would still buy you anywhere. \worth{3}
+
+\qpart{d} A combinational decoder, which compiles with no errors:
+
+\begin{vhdlcode}
+process(sel) is
+begin
+    case sel is
+        when "00"   => leds <= "0001";
+        when "01"   => leds <= "0010";
+        when "10"   => leds <= "0100";
+        when others => null;
+    end case;
+end process;
+\end{vhdlcode}
+
+\noindent Quartus reports \code{Warning: Inferred latch(es) for signal "leds"}. State what the tool
+built and the two-step reason it had no choice. Give two different fixes, one changing only the
+\code{when others} branch and one adding a single line before the \code{case}. Then say why a
+warning here is more dangerous than an error would be. \worth{3}
+
+% ------------------------------------------------------------------------------------------
+\question{Counting, shifting, and knowing when a byte has arrived}{12}
+\label{exa:q:6}
+
+\qpart{a} A counter is declared \code{signal counter: natural range 0 to 15;} and incremented once
+per clock edge with no comparison anywhere in the design.
+
+State what happens after \code{15} and why. Name the element in the gate-level drawing that performs
+the wrap, state what has to be true of the range for the wrap to be free, and say what changes at
+\code{natural range 0 to 9}.
+
+Then: GHDL aborts on the wrap that the drawing and the FPGA both perform happily. State which of the
+two is modelling the hardware, and give the rule that follows for anything you intend to verify.
+\worth{4}
+
+\qpart{b} An 8-bit shift register, reset to \code{"00000000"}, is clocked with this book's shift:
+
+\begin{vhdlcode}
+shift_reg <= shift_reg(6 downto 0) & serial_in;
+\end{vhdlcode}
+
+\noindent\code{serial_in} carries \code{1}, \code{0}, \code{1}, \code{1} on four consecutive enabled
+edges. Give \code{shift_reg} after each of the four.
+
+Then state which bit position holds the first bit you sent, where it will be after eight edges, and
+give the mirror-image shift expression together with what it changes. \worth{3}
+
+\qpart{c} Distinguish SIPO from PISO: what enters and leaves each, which you would reach for to
+receive a stream of serial bits and which to drive a chain of LEDs from a fixed pattern, and the
+\textbf{two} things that differ between the two architectures. \worth{2}
+
+\qpart{d} In \code{serial_rx8}, \code{data_ready} is a one-cycle pulse rather than a level that
+stays high once a byte has arrived.
+
+State why it is a pulse, what that requires of \code{data_out}, and what a real peripheral would
+add. Then state why the board demonstration had to add a flip-flop before an LED could show
+\code{data_ready} at all, and name the earlier chapter whose problem that is in different clothes.
+\worth{3}
+
+% ------------------------------------------------------------------------------------------
+\question{The counter that watches for a number}{10}
+\label{exa:q:7}
+
+\qpart{a} State what separates a timer from a plain counter.
+
+Then build the comparison as gates: name the gate used per bit and say what it computes, name the
+gate that combines them, and give the total gate count for a 4-bit target and for the 26-bit target
+that counting to 50,000,000 needs.
+
+Finally, watching a 4-bit timer count toward \code{1010}, three of the four per-bit outputs are high
+on plenty of counts that are not \code{1010}. State what insists on all four. \worth{3}
+
+\qpart{b} A 4-bit timer has \code{TICK_COUNT = 10}, and its designer leaves out the clear that
+returns the counter to \code{0000} when the target is reached.
+
+State how often \code{timeout} fires with the clear in place and how often without it, in clock
+edges, and show the arithmetic for both. State which of the two periods is the one that was asked
+for, and give the general form of the off-by-one that makes the first number what it is. \worth{3}
+
+\qpart{c} The CircuitVerse timer's \code{timeout} is a combinational decode of the count; the VHDL
+\code{timer}'s is registered inside the clocked process. State the difference this makes to
+\emph{when} \code{timeout} is high and to what it can do between edges, and name the discussion
+later in the book that turns on exactly this distinction. \worth{2}
+
+\qpart{d} A colleague wants an LED to blink once a second and wires the \code{timeout} output of a
+timer into the clock input of the flip-flop holding the LED state, ``so it only ticks once a
+second''.
+
+State the rule this breaks, what it costs in a design of any size, and what they should have done
+instead. \worth{2}
+
+% ------------------------------------------------------------------------------------------
+\question{A machine designed by hand, then written down}{13}
+\label{exa:q:8}
+
+A \textbf{Moore} machine watches a serial input \code{din}, one bit per clock cycle, and raises
+\code{y} once it has seen the sequence \code{1, 1, 0}. Matches do \textbf{not} overlap: after a
+match the machine starts looking for a fresh \code{1, 1, 0} from scratch. It has four states,
+encoded in two flip-flops \mbox{\code{{Q1, Q2}}}:
+
+\begin{narrowtable}{@{}llc@{}}
+  \thead{State} & \thead{Meaning} & \thead{\code{{Q1, Q2}}} \\
+  \midrule
+  \code{S0} & nothing matched yet & \code{00} \\
+  \code{S1} & saw \code{1} & \code{01} \\
+  \code{S2} & saw \code{11} & \code{11} \\
+  \code{S3} & saw \code{110} & \code{10} \\
+\end{narrowtable}
+
+\qpart{a} Draw the state diagram, with an arrow out of every state for \code{din = 0} \textbf{and}
+for \code{din = 1}, and mark which state drives \code{y = 1}. Then give the complete state table:
+all eight rows of \mbox{\code{{Q1, Q2, din}}}, with \mbox{\code{{Q1+, Q2+}}} and \code{y}.
+
+State what happens in \code{S2} on \code{din = 1} and justify it in one sentence. \worth{5}
+
+\qpart{b} Derive \code{Q1+}, \code{Q2+} and \code{y} by Karnaugh map, treating each as a function
+of \mbox{\code{{Q1, Q2, din}}}. Give the equations and say what gates each needs. \worth{3}
+
+\qpart{c} Write the same machine in VHDL: an enumerated state type and a \code{case}-statement
+process, with \code{reset_n} synchronized the way every top level in this book synchronizes it.
+
+Then state what your VHDL does \textbf{not} contain that parts (a) and (b) produced, and who decides
+it instead. \worth{3}
+
+\qpart{d} In \code{fsm_led}, a colleague replaces the edge-detected pulse driving
+\code{to_next_state} with the button's \textbf{level}, \code{not button_n(0)}, on the grounds that
+it is high exactly when the button is pressed. (\code{button_sync} exposes only the pulse, so there
+is no synchronized level to take instead without adding a \code{sync} of your own.)
+
+State what the machine does while the button is held down, with the arithmetic, and say which state
+it ends up in. Name the fix. \worth{2}

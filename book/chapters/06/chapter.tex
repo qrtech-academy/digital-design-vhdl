@@ -1,0 +1,49 @@
+% Chapter 6, typeset from lectures/L06: the README is the opener and the closing review, and each
+% part of Appendix A is a section, in the same order and with the same subsections. Appendix B,
+% the exercises, is the last section.
+
+\chapter{Counters and Shift Registers}
+\label{c6:ch}
+
+{\large\itshape Building blocks for anything that needs to count or move bits.\par}
+
+\begin{chapterbox}{In this chapter}
+\begin{itemize}
+  \item Counters: a register, an adder and a constant \code{1}, and why wraparound comes for free.
+  \item Shift registers: moving data one bit per clock edge, in one direction used consistently.
+  \item Serial-in/parallel-out and parallel-in/serial-out, and which fits which job.
+  \item An 8-bit serial receiver: a shift register plus a bit counter, knowing when a byte has
+    arrived.
+  \item Two demonstrations on the DE0-CV: a row of LEDs counting and wrapping, and a byte shifted in
+    one button press at a time.
+\end{itemize}
+\end{chapterbox}
+
+This chapter builds four things, in this order. A 4-bit counter in CircuitVerse: a register, an
+adder, and a constant \code{1}, run past \code{1111} to watch it wrap. The same counter in VHDL. A
+shift register in VHDL, traced one clock edge at a time on paper before any of it is written. And
+\code{serial_rx8}, the shift register just written plus the bit counter that tells it when a byte
+is done: the two halves of the chapter meeting in one module. Then both go onto the board. First
+the counter, its top bits on a row of LEDs, slowed to something the eye can follow, running up to
+all-ones and wrapping back to zero on its own; then \code{serial_rx8} with \code{shift_enable}
+driven by a push button instead of held high, so one press shifts one bit and the byte assembles
+across eight LEDs, most significant bit first.
+
+Before the counter in \secref{c6:a1} reaches \code{1111}, predict what it will show next, and then
+find the element in the drawing that makes it happen. There isn't one, which is the point: nothing
+in the circuit performs the wrap, and that is a consequence of the register's width rather than
+logic anybody added.
+
+\code{serial_rx8} (\file{lectures/L06/serial_rx8/serial_rx8.vhd}) is the first design in the book
+whose correctness you cannot check by eye at full speed: enabled continuously it swallows a byte in
+160\,ns. That is why it ships a reference testbench, and why the board demonstration drives
+\code{shift_enable} from a button instead. Slowing the \emph{clock} would be the software instinct
+and the wrong move; the module already has the control that lets you take one bit at a time. The
+board demonstration in \secref{c6:a7} wraps it in Chapter~\ref{c4:ch}'s \code{reset_sync} and
+\code{button_sync}, both unchanged, so it is a composition exercise as much as a receiver. Read the
+sections through before you start on the exercises; running their testbenches is covered in
+\secref{c2:app:c}.
+
+\input{chapters/06/counters}
+\input{chapters/06/summary}
+\input{chapters/06/exercises}

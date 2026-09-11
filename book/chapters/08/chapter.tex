@@ -1,0 +1,61 @@
+% Chapter 8, typeset from lectures/L08: the README is the opener and the closing review, and each
+% part of Appendix A is a section, in the same order and with the same subsections: A.1 to A.3,
+% the machine designed by hand, in design.tex, and A.4 to A.6, the machine in VHDL, in vhdl.tex.
+% Appendix B, the exercises and the two course capstones, is the last section.
+
+\chapter{State Machines}
+\label{c8:ch}
+
+{\large\itshape Designed by hand first, then expressed in the language.\par}
+
+\begin{chapterbox}{In this chapter}
+\begin{itemize}
+  \item Finite state machines: states, transitions, inputs and outputs.
+  \item Hand-designing a Moore machine: state diagram, state table, Karnaugh-derived logic.
+  \item State encoding as a design decision, and why the worked machine uses a Gray code.
+  \item The same machine in VHDL: an enumerated type and the \code{case} transition pattern.
+  \item Why Moore is the default in this book.
+  \item \code{fsm_led} on the DE0-CV: buttons cycling the LED off, blinking, on.
+  \item Mealy machines (\secref{c8:a5}), and \code{seq_detect_mealy} to read and run.
+  \item The course capstones, as exercises: a serial receiver and a serial transmitter, the two ends
+    of one link.
+\end{itemize}
+\end{chapterbox}
+
+This chapter designs one state machine by hand and then writes another in VHDL. The first is a
+Moore machine taken from its specification through a state diagram and a state table to
+Karnaugh-derived next-state and output logic, with no step skipped, and then realized as a gate
+network in CircuitVerse and stepped through its state cycle by hand: at each step, predict the next
+state from the diagram before the clock is advanced. The second is \code{fsm_led}, the three-state
+LED controller of \secref{c8:a4}, composed from Chapter~\ref{c4:ch}'s synchronizer and
+Chapter~\ref{c7:ch}'s timer. An enumerated \code{state_t} type and a \code{case}-statement process
+replace the state table and the Karnaugh maps entirely. It is a different, larger machine than the
+hand-designed one, deliberately, so the correspondence you are watching is structural rather than a
+transcription: every row you derived by hand in the state table becomes one branch of a
+\code{case}, and seeing that correspondence is worth more than either step on its own. The course
+then takes \code{fsm_led} onto the board.
+
+Mealy machines are read rather than presented: \secref{c8:a5} covers them, with
+\code{seq_detect_mealy} to read and run, and Exercise~\ref{c8:ex:4} has you write one. Reading it
+matters more than it might look. Everything else in the chapter is Moore, and Moore is the default
+in this book. \Secref{c8:a5} is where you find out what the alternative costs and buys, which is the
+only way that default becomes a choice rather than a habit.
+
+The chapter assumes Chapter~\ref{c2:ch}'s Karnaugh maps and Chapter~\ref{c3:ch}'s flip-flops, and
+reuses Chapter~\ref{c7:ch}'s \code{timer} unchanged, together with Chapter~\ref{c4:ch}'s
+synchronizer widened to two buttons. Of the exercises, the first two are pen-and-paper,
+Exercise~\ref{c8:ex:5} is reading and running the worked machine, and the rest are VHDL.
+Exercises~\ref{c8:ex:6} and~\ref{c8:ex:7} are the \textbf{course capstones}: the two halves of one
+serial link. The receiver composes Chapter~\ref{c4:ch}'s \code{reset_sync},
+Chapter~\ref{c5:ch}'s \code{sync} and Chapter~\ref{c7:ch}'s \code{timer} around a state machine
+that does its own shifting; the transmitter needs only the first and the last of those, mirrored.
+Budget real time for them, and design each state diagram on paper before writing any VHDL. Do the
+receiver first: it is the harder of the two, because it has to recover the bit timing it is given
+rather than define it. The modules they reuse are worth having open alongside them, and so are
+Chapter~\ref{c6:ch}'s \code{serial_rx8} and \code{piso8} for the shift idiom, though neither is
+instantiated: the capstones shift inside their own state machines.
+
+\input{chapters/08/design}
+\input{chapters/08/vhdl}
+\input{chapters/08/summary}
+\input{chapters/08/exercises}

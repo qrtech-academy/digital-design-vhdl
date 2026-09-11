@@ -1,0 +1,86 @@
+% Short answers to Chapter 6's exercises, lectures/L06/appendix/b_exercises.md.
+
+\answerchapter{c6:ch}
+
+\answer{c6:ex:1}{Sizing a counter register}
+\pt{a}10 bits.
+\pt{b}1023.
+\pt{c}A 6-bit counter: \code{signal counter: natural range 0 to 63;}
+
+\answer{c6:ex:2}{A counter traced by hand}
+\ptnote{Trace}\begin{tabular}[t]{@{}lccccc@{}}
+  Edge & 1 & 2 & 3 & 4 & 5 \\
+  \midrule
+  Before & 2 & 3 & 0 & 1 & 2 \\
+  Captured & 3 & 0 & 1 & 2 & 3 \\
+\end{tabular}
+\ptnote{Why it wraps}The range needs only two bits. On the edge after \code{3} the adder produces
+\code{100}; the carry has no flip-flop to go into, and the two bits that remain are \code{00}.
+
+\answer{c6:ex:3}{Overflow in CircuitVerse}
+\pt{b}One count per edge, \code{0000} up to \code{1111}, and back to \code{0000} on the sixteenth
+edge. \code{carry_out} is high on one of the sixteen, while the count is \code{1111} and the
+register rolls over, and nothing is connected to it. The fifth bit leaves the adder and goes
+nowhere: the register has only four \code{D} inputs, so it stores the low four bits of
+\code{10000}, which are \code{0000}.
+\pt{c}No part of the drawing decides it: the register's four-bit width does the work, by
+discarding the adder's carry-out. To count \code{0} to \code{9}, add an equality comparator that
+detects \code{1001} and a clear that forces the register to \code{0000} on the next edge.
+\pt{d}It wraps from \code{111} to \code{000}, after \code{7}. An N-bit counter counts \code{0} to
+\code{2^N - 1} and wraps every $2^N$ edges.
+
+\answer{c6:ex:5}{Tracing a SIPO register}
+\pt{a}\begin{tabular}[t]{@{}ccc@{}}
+  Edge & \code{serial_in} & \code{shift_reg} after \\
+  \midrule
+  1 & 1 & \code{00000001} \\
+  2 & 0 & \code{00000010} \\
+  3 & 1 & \code{00000101} \\
+  4 & 1 & \code{00001011} \\
+\end{tabular}
+\pt{b}Bits 3 down to 0, holding \code{1011}. Read from bit 3 down to bit 0 they are in arrival
+order: the first bit to arrive is in bit 3, the most recent in bit 0.
+
+\answer{c6:ex:6}{Tracing a PISO register}
+\pt{a}\begin{tabular}[t]{@{}lcc@{}}
+  Edge & Register & \code{serial_out} \\
+  \midrule
+  Load & \code{1010} & 1 \\
+  Shift 1 & \code{0100} & 0 \\
+  Shift 2 & \code{1000} & 1 \\
+  Shift 3 & \code{0000} & 0 \\
+  Shift 4 & \code{0000} & 0 \\
+\end{tabular}
+\pt{b}Most significant bit first: bit 3, then 2, 1 and 0 of \code{parallel_in}, that is \code{1},
+\code{0}, \code{1}, \code{0}.
+\pt{c}\code{0000}. All four loaded bits have been shifted out of the top, and each shift filled
+bit 0 with \code{serial_in = '0'}.
+
+\answer{c6:ex:7}{SIPO and PISO in VHDL}
+\pt{c}SISO: a delay line, holding a signal back a fixed number of clock cycles. SIPO: receiving a
+serial bit stream, such as an incoming byte on a single wire. PISO: sending a word out over a single
+wire, such as driving a chain of LEDs or an external shift-register chip. PIPO: a plain register,
+holding a word.
+
+\answer{c6:ex:8}{Accounting for the receiver}
+\pt{a}\code{10110010}. The first bit to arrive, \code{1}, is in \code{data_out(7)}; the last,
+\code{0}, is in \code{data_out(0)}.
+\pt{b}Yes: \code{10110010}, with \code{data_ready} pulsing on the eighth bit. During the gap the
+bit counter holds at \code{4}, and the register at \code{00001011}; both resume on the fifth bit. If
+only the shift were gated, the counter would count the three idle edges too, so \code{data_ready}
+would pulse as the fifth bit lands, with the partial byte \code{00010110} on \code{data_out}, not
+pulse when the byte really completes, and stay out of step with the byte boundaries from then on.
+\pt{c}\begin{itemize}
+  \item Mirror-image shift: \code{data_ready} still pulses on time, but the byte-check fails,
+    ``\code{serial_rx8: wrong byte on data_out for BYTE1!}'', because the byte arrives
+    bit-reversed, \code{01001101}. On a real link every byte would be read reversed, with correct
+    framing, so nothing but the data would look wrong.
+  \item No unconditional \code{data_ready <= '0';}: \code{data_ready} rises on the first byte and
+    never falls, caught on the first idle cycle by ``\code{serial_rx8: data_ready must be a
+    single-cycle pulse!}''. On a real link the consumer would see a byte ready on every cycle
+    after the first, and could never tell when a later byte completed.
+  \item Comparison against 6: \code{data_ready} pulses on the seventh bit of the first byte,
+    caught by ``\code{serial_rx8: data_ready fired before eight bits arrived!}''. On a real link the
+    receiver would report 7-bit words, each missing its last bit, with the framing slipping one bit
+    further from the real byte boundaries on every byte.
+\end{itemize}

@@ -1,0 +1,45 @@
+% Section 3.10, from lectures/L03/README.md: the objectives, the questions to test yourself, and
+% the next lecture.
+
+\needspace{10\baselineskip}
+\section{Review}
+\label{c3:sec:review}
+
+\subsection*{What you should be able to do now}
+After this chapter, you should be able to:
+\begin{itemize}
+  \item Say why sequential logic exists, explain the functional difference between a D latch and a
+    D flip-flop, and why synchronous designs are built almost entirely from the flip-flop.
+  \item Read and write the synchronous process template, and recognize a register as several
+    flip-flops sharing a clock, reset and enable.
+  \item Say when a signal assignment takes effect: \code{<=} schedules rather than applies, so two
+    assignments in one clocked process build a chain, and their order makes no difference.
+  \item Build an edge detector from a flip-flop and a gate, and say exactly what signal it produces
+    and for how long.
+\end{itemize}
+
+\needspace{6\baselineskip}
+\subsection*{Questions to test yourself}
+You should be able to explain:
+\begin{enumerate}
+  \item What is the functional difference between a D latch and a D flip-flop, and under what
+    condition does each change its output?
+  \item Why do synchronous circuits update their state on a single clock edge instead of
+    continuously reacting to their inputs?
+  \item Given a signal and a flip-flop holding its value from one cycle earlier, how do you combine
+    them into a pulse that is high for exactly one clock cycle when the signal rises?
+  \item Why must \code{clock} be the only signal in a flip-flop process's sensitivity list, unless
+    the design has an asynchronous reset?
+  \item A clocked process contains \code{b <= a;} and then \code{c <= b;}. After one clock edge, what
+    does \code{c} hold, and why is it not \code{a}? What changes if you swap the two lines, and why?
+\end{enumerate}
+
+\needspace{6\baselineskip}
+\subsection*{Looking ahead}
+Chapter~\ref{c4:ch} is about metastability and synchronization:
+\begin{itemize}
+  \item Why the raw button feeding this chapter's edge detector can drive a flip-flop into an
+    undefined, unstable state, and why that is a different kind of problem from anything here.
+  \item The double-flop synchronizer, and what it does and does not do about a bouncing button.
+  \item The same LED toggle, rebuilt so it is actually safe on real hardware.
+\end{itemize}

@@ -1,0 +1,480 @@
+% Section 2.10, from lectures/L02/appendix/b_exercises.md.
+
+\section{Exercises}
+\label{c2:sec:exercises}
+
+\begin{aside}
+\textbf{How to work these.} Each exercise is tagged with the kinds of work it asks for:
+\kinds{Paper} by hand, \kinds{CircuitVerse} in the browser, \kinds{VHDL} in a module of your own.
+
+\textbf{How to check your work.} Every exercise that asks you to write a VHDL module ships a
+self-checking testbench under \file{lectures/L02/exercises} in the companion repository. Write your
+module in its \file{exercises/<module>} directory, using the entity name and the \textbf{port order}
+the exercise specifies, then run it with GHDL; \secref{c2:app:c} has the three commands.
+
+No FPGA board is needed for any exercise. Your job is to get the VHDL right, and the testbench is
+how you confirm it. Short answers to the parts you work on paper are in
+Appendix~\ref{app:answers}; reference solutions to the VHDL are published in the companion
+repository, under \file{lectures/L02/solutions}. Try each exercise yourself before looking at
+either.
+\end{aside}
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{Karnaugh Maps}
+\label{c2:set:1}
+
+\exercise{A three-variable map}{Paper, CircuitVerse}
+\label{c2:ex:1}
+Derive a minimized equation for \code{X} from the Karnaugh map below, then realize the
+corresponding gate network and simulate it in CircuitVerse:
+
+\begin{narrowtable}{@{}cc@{}}
+  \thead{ABC} & \thead{X} \\
+  \midrule
+  000 & 1 \\
+  001 & 1 \\
+  010 & 0 \\
+  011 & 0 \\
+  100 & 1 \\
+  101 & 1 \\
+  110 & 0 \\
+  111 & 0 \\
+\end{narrowtable}
+
+\note[Tip] Lay \code{AB} down the rows in Gray-code order (\code{00, 01, 11, 10}) and \code{C}
+across the columns, exactly as in \secref{c2:a1}'s worked example, before you start grouping
+\code{1}s.
+
+\exercise{A four-variable map}{Paper, CircuitVerse}
+\label{c2:ex:2}
+Derive a minimized equation for \code{X} from the Karnaugh map below, then realize the
+corresponding gate network and simulate it in CircuitVerse:
+
+\begin{narrowtable}{@{}cc@{}}
+  \thead{ABCD} & \thead{X} \\
+  \midrule
+  0000 & 0 \\
+  0001 & 1 \\
+  0010 & 0 \\
+  0011 & 1 \\
+  0100 & 0 \\
+  0101 & 0 \\
+  0110 & 0 \\
+  0111 & 0 \\
+  1000 & 0 \\
+  1001 & 1 \\
+  1010 & 0 \\
+  1011 & 1 \\
+  1100 & 1 \\
+  1101 & 0 \\
+  1110 & 1 \\
+  1111 & 0 \\
+\end{narrowtable}
+
+\note[Tip] With four variables, put two of them (in Gray code) on each axis, so you get a
+$4\times4$ grid. Groups can still wrap around every edge of the grid, not just left-right; remember
+to check the top/bottom wraparound too.
+
+% ------------------------------------------------------------------------------------------
+\needspace{16\baselineskip}
+\exerciseset{Circuits in VHDL}
+\label{c2:set:2}
+
+\exercise{A three-output network}{Paper, CircuitVerse, VHDL}
+\label{c2:ex:3}
+A gate network has:
+\begin{itemize}
+  \item Four inputs, \code{ABCD}.
+  \item Three outputs, \code{XYZ}.
+\end{itemize}
+It is given by the truth table below:
+
+\begin{narrowtable}{@{}cc@{}}
+  \thead{ABCD} & \thead{XYZ} \\
+  \midrule
+  0000 & 001 \\
+  0001 & 010 \\
+  0010 & 001 \\
+  0011 & 011 \\
+  0100 & 100 \\
+  0101 & 110 \\
+  0110 & 100 \\
+  0111 & 111 \\
+  1000 & 101 \\
+  1001 & 110 \\
+  1010 & 101 \\
+  1011 & 111 \\
+  1100 & 000 \\
+  1101 & 010 \\
+  1110 & 000 \\
+  1111 & 011 \\
+\end{narrowtable}
+
+\begin{parts}
+  \item Treat \code{X}, \code{Y}, and \code{Z} as three separate single-output functions of
+    \code{ABCD}, and derive a minimized equation for each via a Karnaugh map.
+  \item Realize the resulting gate network and simulate it in CircuitVerse; confirm all three
+    outputs against the truth table above.
+  \item Implement the design in VHDL, in a module of your own with four \code{std_logic} inputs and
+    three \code{std_logic} outputs (\secref{c1:a4} and \secref{c2:a2} show the pattern for turning a
+    derived equation into concurrent VHDL assignments).
+  \item Run the testbench (see the aside at the start of these exercises) and confirm all 16 rows
+    pass.
+\end{parts}
+If a row fails, the assertion message names the input combination:
+\begin{itemize}
+  \item Go back to the Karnaugh map for whichever of \code{X}, \code{Y}, \code{Z} is wrong.
+  \item A single wrong output on a single row is nearly always one mis-grouped \code{1} in one map.
+\end{itemize}
+\note[Tip] Two of the three outputs here turn out to depend on only one or two of the four inputs
+once minimized. Don't assume every output needs all four.
+
+\modulefigure{xyz_logic}
+
+\selfcheck name your VHDL entity \code{xyz_logic}, with ports \code{a}, \code{b}, \code{c},
+\code{d} (in) and \code{x}, \code{y}, \code{z} (out), declared in that order; its testbench is in
+\file{exercises/xyz_logic} and checks all 16 rows of the truth table above.
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{Multiplexers}
+\label{c2:set:3}
+
+\exercise{The 4-to-1 mux by hand}{Paper, CircuitVerse}
+\label{c2:ex:4}
+A 4-to-1 multiplexer has:
+\begin{itemize}
+  \item Four data inputs, \code{A}--\code{D}.
+  \item Two selector bits, \code{S[1:0]}.
+  \item One output, \code{X}.
+\end{itemize}
+Take the selector to name its data input directly: \code{S[1:0] = "00"} selects \code{A},
+\code{"01"} selects \code{B}, \code{"10"} selects \code{C}, and \code{"11"} selects \code{D}. That is
+the mapping Exercise~\ref{c2:ex:6} implements.
+
+\begin{parts}
+  \item Write out the multiplexer's truth table (four rows, one per selector combination).
+  \item Derive the sum-of-products equation for \code{X} in terms of \code{A}--\code{D} and
+    \code{S[1:0]} (\secref{c2:a4} works the same way for the 8-to-1 case; halve it here).
+  \item Build and simulate the network in CircuitVerse, and confirm \code{X} follows each data input
+    in turn as you change \code{S[1:0]}.
+\end{parts}
+Keep your answer: Exercise~\ref{c2:ex:6} below implements this exact circuit in VHDL, once
+\secref{c2:a5} has given you the \code{process} and \code{case} statements it needs.
+
+\exercise{A 2-to-1 mux with \code{if}}{VHDL}
+\label{c2:ex:5}
+\Secref{c2:a5} writes the 2:1 multiplexer using a \code{case} statement. Write the same circuit
+again with an \code{if}/\code{else} instead, and confirm for yourself that the two describe identical
+hardware.
+
+Write an entity named \code{mux2} with:
+
+\begin{booktable}{@{}p{4em}p{4.8em}p{5.2em}L@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
+  \midrule
+  \code{d0} & in & \code{std_logic} & Data input. \\
+  \code{d1} & in & \code{std_logic} & Data input. \\
+  \code{sel} & in & \code{std_logic} & Selector. \\
+  \code{x} & out & \code{std_logic} & The selected data input. \\
+\end{booktable}
+
+\noindent The selector routes the data input whose number it names:
+\begin{itemize}
+  \item \code{sel = '0'} selects \code{d0}.
+  \item \code{sel = '1'} selects \code{d1}.
+  \item Note this is the opposite way round from \secref{c2:a5}'s \code{case} example, which selects
+    its \emph{second} input \code{b} on \code{'0'}. Which input a selector value names is a
+    convention, not a rule, so read it off the specification every time rather than assuming.
+\end{itemize}
+Implement the multiplexer using a process-based architecture:
+\begin{itemize}
+  \item Include \code{d0}, \code{d1}, and \code{sel} in the sensitivity list.
+  \item Use an \code{if}/\code{else} statement on \code{sel}.
+  \item Assign \code{x} in every branch.
+  \item Do not use:
+    \begin{itemize}
+      \item A conditional concurrent assignment (\code{x <= d1 when sel = '1' else d0;}).
+      \item A \code{with...select} statement:
+        \begin{itemize}
+          \item a concurrent form of \code{case} this book doesn't cover.
+          \item mentioned only so you don't reach for it if you've met it elsewhere.
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\modulefigure{mux2}
+
+\selfcheck name your entity \code{mux2}, with ports \code{d0}, \code{d1}, \code{sel} (in) and
+\code{x} (out), declared in that order; its testbench is in \file{exercises/mux2} and checks all
+eight combinations of the three inputs.
+
+\exercise{The 4-to-1 mux in VHDL}{VHDL}
+\label{c2:ex:6}
+Extend Exercise~\ref{c2:ex:5} into a 4:1 multiplexer named \code{mux4}.
+
+This is the circuit you derived, drew, and simulated by hand in Exercise~\ref{c2:ex:4} above.
+Re-derive the \code{case} branches yourself for four inputs and two selector bits rather than
+copying the 8-to-1 example from \secref{c2:a5}.
+
+The entity must have:
+
+\begin{booktable}{@{}p{4em}p{4.8em}p{14.6em}L@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
+  \midrule
+  \code{d0} & in & \code{std_logic} & Data input. \\
+  \code{d1} & in & \code{std_logic} & Data input. \\
+  \code{d2} & in & \code{std_logic} & Data input. \\
+  \code{d3} & in & \code{std_logic} & Data input. \\
+  \code{sel} & in & \code{std_logic_vector(1 downto 0)} & Selector. \\
+  \code{x} & out & \code{std_logic} & The selected data input. \\
+\end{booktable}
+
+\noindent As in Exercise~\ref{c2:ex:5}, the selector names its data input directly:
+\begin{itemize}
+  \item \code{"00"} selects \code{d0}.
+  \item \code{"01"} selects \code{d1}.
+  \item \code{"10"} selects \code{d2}.
+  \item \code{"11"} selects \code{d3}.
+  \item Again, that is the opposite mapping from \secref{c2:a5}'s 8-to-1 worked example, where
+    \code{"000"} routes \code{inputs(7)}. Derive your \code{case} branches from the four lines above,
+    not from that listing.
+\end{itemize}
+Implement the multiplexer using a process:
+\begin{itemize}
+  \item Include all data inputs and \code{sel} in the sensitivity list.
+  \item Use a \code{case} statement on \code{sel}, one branch per selector value above.
+  \item Include a \code{when others} branch.
+    \begin{itemize}
+      \item Choose a safe output value for select inputs containing values such as \code{'X'},
+        \code{'U'}, or \code{'Z'}.
+    \end{itemize}
+  \item Do not replace the \code{case} statement with an \code{if}/\code{elsif} chain.
+\end{itemize}
+
+\modulefigure{mux4}
+
+\selfcheck name your entity \code{mux4}, with ports \code{d0}, \code{d1}, \code{d2}, \code{d3},
+\code{sel} (\code{std_logic_vector(1 downto 0)}) and \code{x} (out), declared in that order; its
+testbench is in \file{exercises/mux4} and sweeps all four selector values against all sixteen
+data-input combinations.
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{Submodules and 7-Segment Displays}
+\label{c2:set:4}
+Exercises~\ref{c2:ex:7} and~\ref{c2:ex:8} build one design in two halves: a module that drives a
+single 7-segment display, and a top level that uses two copies of it to show a hexadecimal digit on
+each. Do them in order: Exercise~\ref{c2:ex:8} instantiates what you write in
+Exercise~\ref{c2:ex:7}.
+
+A 7-segment display is seven LEDs, named \code{a} through \code{g}, arranged around a figure-eight.
+Light the right subset and you get a digit. This is the layout, and it is the one you need in order
+to work out the codes below:
+
+\begin{console}
+      aaaa
+     f    b
+     f    b
+      gggg
+     e    c
+     e    c
+      dddd
+\end{console}
+
+\noindent So \code{1} lights \code{b} and \code{c} (the two on the right), and \code{7} lights
+\code{a}, \code{b} and \code{c}. Comparing the codes given for those two digits is a quick way to
+confirm you have the layout the right way round before you start deriving \code{A} to \code{F}.
+
+On the DE0-CV the displays are wired \textbf{active-low}: driving a segment to \code{'0'} lights it,
+and \code{'1'} turns it off. That is why the code for \code{8}, which lights every segment, is
+\code{"0000000"}, and why a blank display is \code{"1111111"}.
+
+Throughout, \code{hex(6 downto 0)} maps to segments \code{g}, \code{f}, \code{e}, \code{d},
+\code{c}, \code{b}, \code{a}: bit 6 is \code{g} and bit 0 is \code{a}.
+
+\exercise{One 7-segment digit}{VHDL, Paper}
+\label{c2:ex:7}
+Write a module named \code{display} that drives one 7-segment display with a hexadecimal digit.
+
+The entity must have:
+
+\begin{booktable}{@{}p{4em}p{4.8em}p{14.6em}L@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
+  \midrule
+  \code{number} & in & \code{std_logic_vector(3 downto 0)} & The value to show, \code{0000}
+    through \code{1111}. \\
+  \code{hex} & out & \code{std_logic_vector(6 downto 0)} & The segment code for that value. \\
+\end{booktable}
+
+\noindent So feeding \code{number} the value \code{0111} must put the code for \code{7} on
+\code{hex}, and feeding it \code{1110} must put the code for \code{E} on \code{hex}.
+
+Implement it using a process:
+\begin{itemize}
+  \item Put \code{number} in the sensitivity list.
+  \item Use a \code{case} statement on \code{number}, one branch per value.
+  \item Include a \code{when others} branch, and blank the display in it.
+\end{itemize}
+You are given the codes for \code{0} to \code{9}. Work out \code{A} to \code{F} yourself, from the
+segment layout above:
+
+\begin{vhdlcode}
+constant DISPLAY_0  : std_logic_vector(6 downto 0) := "1000000";
+constant DISPLAY_1  : std_logic_vector(6 downto 0) := "1111001";
+constant DISPLAY_2  : std_logic_vector(6 downto 0) := "0100100";
+constant DISPLAY_3  : std_logic_vector(6 downto 0) := "0110000";
+constant DISPLAY_4  : std_logic_vector(6 downto 0) := "0011001";
+constant DISPLAY_5  : std_logic_vector(6 downto 0) := "0010010";
+constant DISPLAY_6  : std_logic_vector(6 downto 0) := "0000010";
+constant DISPLAY_7  : std_logic_vector(6 downto 0) := "1111000";
+constant DISPLAY_8  : std_logic_vector(6 downto 0) := "0000000";
+constant DISPLAY_9  : std_logic_vector(6 downto 0) := "0010000";
+-- Todo: add DISPLAY_A through DISPLAY_F here.
+constant DISPLAY_OFF: std_logic_vector(6 downto 0) := "1111111";
+\end{vhdlcode}
+
+\noindent Two of the six are lower-case on a 7-segment display, because their upper-case forms would
+be indistinguishable from a digit: \code{b} would read as \code{8} and \code{d} would read as
+\code{0}. \code{A}, \code{C}, \code{E} and \code{F} are upper-case.
+
+All sixteen codes are also sitting in \file{display_tb.vhd}, since a self-checking testbench cannot
+check an output without knowing what it should be. So this is not a puzzle you can be locked out of.
+Derive the six anyway: it takes a couple of minutes with the segment diagram, and reading them off
+the testbench teaches you nothing the \code{case} statement does not. The work of this exercise is
+the sixteen-branch \code{case}, not the lookup table.
+
+\modulefigure{display}
+
+\selfcheck name your entity \code{display}, with ports \code{number}
+(\code{std_logic_vector(3 downto 0)}) and \code{hex} (out, \code{std_logic_vector(6 downto 0)}),
+declared in that order; its testbench is in \file{exercises/display} and checks all sixteen values
+against the full code table, naming the digit and both codes when one is wrong.
+
+\exercise{Two digits from submodules}{VHDL}
+\label{c2:ex:8}
+Write a module named \code{hex_display} that shows a two-digit hexadecimal number on two displays,
+using two instances of your \code{display} from Exercise~\ref{c2:ex:7}.
+
+The entity must have:
+
+\begin{booktable}{@{}p{4em}p{4.8em}p{14.6em}L@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
+  \midrule
+  \code{input} & in & \code{std_logic_vector(7 downto 0)} & Eight slide switches: the top four are
+    the left digit, the bottom four the right. \\
+  \code{hex1} & out & \code{std_logic_vector(6 downto 0)} & Segment code for the left digit. \\
+  \code{hex0} & out & \code{std_logic_vector(6 downto 0)} & Segment code for the right digit. \\
+\end{booktable}
+
+\noindent When it works:
+\begin{itemize}
+  \item the number on \code{input(7 downto 4)} appears on \code{hex1}.
+  \item the number on \code{input(3 downto 0)} appears on \code{hex0}.
+\end{itemize}
+Build it with submodules, following \secref{c2:a6}:
+\begin{itemize}
+  \item Create two instances of \code{display}, labelled \code{display1} and \code{display0}.
+  \item Connect \code{input(7 downto 4)} and \code{hex1} to \code{display1}.
+  \item Connect \code{input(3 downto 0)} and \code{hex0} to \code{display0}.
+  \item Use positional \code{port map}, as everywhere else in this book.
+  \item Write no logic of your own in \code{hex_display}. If you find yourself writing a \code{case}
+    statement here, you are duplicating Exercise~\ref{c2:ex:7} rather than reusing it.
+\end{itemize}
+Copy your \file{display.vhd} from Exercise~\ref{c2:ex:7} into the exercise directory, since
+\code{hex_display} cannot be analyzed without it. This is the first design in the book built from
+more than one file, so name \file{display.vhd} first, ahead of the file that instantiates it:
+
+\begin{shell}
+ghdl -a --std=93 display.vhd hex_display.vhd hex_display_tb.vhd
+ghdl -e --std=93 hex_display_tb
+ghdl -r --std=93 hex_display_tb --assert-level=error --stop-time=10ms
+\end{shell}
+
+\noindent\Secref{c2:c5} explains why the order matters.
+
+\modulefigure{hex_display}
+
+\selfcheck name your entity \code{hex_display}, with ports \code{input}
+(\code{std_logic_vector(7 downto 0)}), \code{hex1} (out) and \code{hex0} (out, both
+\code{std_logic_vector(6 downto 0)}), declared in that order; its testbench is in
+\file{exercises/hex_display} and sweeps all 256 input values, checking each half independently so a
+design that swaps the two digits is caught rather than passing on the values where both halves
+happen to match.
+
+\exercise{A digit as gates}{Paper, CircuitVerse}
+\label{c2:ex:9}
+\textbf{If you have time.} Realize one digit as a gate network, the way Chapter~\ref{c1:ch} and
+\secref{c2:a1} had you do it:
+\begin{itemize}
+  \item Take the four inputs and one segment, say \code{a}, and derive the Boolean equation for it
+    from the 16-row truth table. A Karnaugh map is worth using here: most segments minimize
+    substantially.
+  \item Repeat for as many of the remaining six segments as you have patience for, and build the
+    result in CircuitVerse.
+  \item Then copy the whole gate network to drive a second display.
+\end{itemize}
+That copy is the point of the exercise. Duplicating a block of gates is exactly what instantiating
+\code{display} a second time did in Exercise~\ref{c2:ex:8}, and it is worth having done once by hand
+to see what the one line of VHDL stands for.
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{Naming an Intermediate Result}
+\label{c2:set:5}
+
+\exercise{Naming a sub-expression}{VHDL, Paper}
+\label{c2:ex:10}
+Write an entity named \code{combo_logic} that implements the Boolean function:
+\[ x = ab + c'd \]
+\Secref{c2:a2} made the case that naming a sub-expression with an internal signal costs nothing and
+buys readability. This exercise is where you confirm that rather than take it on trust: you write
+the function twice, once as a single expression and once with the \code{c'd} term pulled out into
+an internal signal named \code{y}.
+
+A signal declared inside an architecture is a wire. It is not a variable, it does not store
+anything, and naming a sub-expression with one does not add a gate, a delay, or a flip-flop to the
+circuit. It only gives a piece of the network a name, so that you, reading it later, can see what
+that piece is for. Both architectures below synthesize to the same gates, and the provided
+testbench passes against either.
+
+The entity must have:
+
+\begin{narrowtable}{@{}lll@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} \\
+  \midrule
+  \code{a} & in & \code{std_logic} \\
+  \code{b} & in & \code{std_logic} \\
+  \code{c} & in & \code{std_logic} \\
+  \code{d} & in & \code{std_logic} \\
+  \code{x} & out & \code{std_logic} \\
+\end{narrowtable}
+
+\begin{parts}
+  \item Implement the entire function using a single concurrent signal assignment:
+    \begin{itemize}
+      \item Do not declare any internal signals.
+      \item Translate each Boolean operation into its corresponding VHDL operator.
+    \end{itemize}
+  \item Rewrite the architecture using an internal signal named \code{y}:
+    \begin{itemize}
+      \item Use \code{y} to represent the term:
+        \[ c'd \]
+      \item Assign the final expression to \code{x}.
+      \item This is the same shape as \code{gate_network} in \secref{c2:a2}, which names its
+        \code{AND} term \code{ab}.
+    \end{itemize}
+\end{parts}
+Confirm that the two architectures describe the same circuit.
+
+\note[Tip] Two descriptions represent the same combinational circuit when they produce the same
+output for every possible input combination. With four inputs:
+\begin{itemize}
+  \item There are 16 possible input combinations.
+  \item Write the complete truth table.
+  \item Verify that both architectures produce the same value of \code{x} in every row.
+\end{itemize}
+
+\modulefigure{combo_logic}
+
+\selfcheck name your entity \code{combo_logic}, with ports \code{a}, \code{b}, \code{c}, \code{d}
+(in) and \code{x} (out), declared in that order; its testbench is in \file{exercises/combo_logic}
+and checks all 16 rows. It passes against either architecture, which is the point of the comparison
+above.

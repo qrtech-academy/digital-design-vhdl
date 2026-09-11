@@ -1,0 +1,45 @@
+% Chapter 1, typeset from lectures/L01: the README is the opener and the closing review, and each
+% part of Appendix A is a section, in the same order and with the same subsections. Appendix B,
+% the exercises, is the last section.
+
+\chapter{Combinational Logic and First VHDL}
+\label{c1:ch}
+
+{\large\itshape From a truth table to a working gate network, in CircuitVerse and in VHDL.\par}
+
+\begin{chapterbox}{In this chapter}
+\begin{itemize}
+  \item Logic gates and truth tables, and why digital logic tolerates noise that analog cannot.
+  \item Boolean algebra: reading a sum-of-products equation straight off a truth table.
+  \item Building and simulating a gate network by hand in CircuitVerse.
+  \item VHDL from the first chapter: \code{entity}, \code{architecture}, \code{std_logic}, and the
+    concurrent assignment.
+  \item A braking assistant, from a requirement and its truth table to a gate network, and on to
+    switches and an LED on a DE0-CV FPGA board.
+  \item \code{or_gate}, taken from truth table to complete module in \secref{c1:a4} and
+    \secref{c1:a5}.
+\end{itemize}
+\end{chapterbox}
+
+This chapter takes one circuit from a requirement to running hardware, and then does it again. The
+first time is \code{or_gate}, the smallest complete VHDL design there is, which \secref{c1:a4} and
+\secref{c1:a5} take end to end in writing. The second is a braking assistant: four gates, derived
+from a requirement and its truth table, simulated against it in CircuitVerse, written as an
+\code{entity} and an \code{architecture} with an internal \code{signal} and two concurrent
+assignments, and finally taken through Quartus onto a DE0-CV, with its four inputs on switches and
+its brake output on an LED. Flick the switches and watch the car decide to brake.
+
+In the course this book comes from, the braking assistant is built live, and \secref{c1:a6} gives
+you its specification without its answer so that you can derive it yourself first, the way the
+people in the room are asked to. Do that before you read on: it is the habit the rest of the book
+is built on. You then write its VHDL in Exercise~\ref{c1:ex:7}, and a testbench decides whether your
+reading of the requirement matches the truth table.
+
+You need nothing installed to read this chapter. The exercises need GHDL, which
+\secref{c2:app:c} installs and explains how to run; the three commands in \secref{c1:a5} are
+enough to get started. The board work is shown in Appendix~\ref{app:quartus} for anyone who has a
+DE0-CV; no exercise needs one.
+
+\input{chapters/01/logic}
+\input{chapters/01/summary}
+\input{chapters/01/exercises}

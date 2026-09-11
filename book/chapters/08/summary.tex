@@ -1,0 +1,61 @@
+% Section 8.7, from lectures/L08/README.md: the objectives, the questions to test yourself, and the
+% README's "Next lecture", which in the last lecture is the end of the course.
+
+\needspace{10\baselineskip}
+\section{Review}
+\label{c8:sec:review}
+
+\subsection*{What you should be able to do now}
+After this chapter, you should be able to:
+\begin{itemize}
+  \item Explain what a finite state machine is, and identify its states, transitions, inputs and
+    outputs in a given circuit.
+  \item Design a Moore machine by hand, from specification through state diagram and state table to
+    Karnaugh-derived equations, and build the result in CircuitVerse.
+  \item Model the same machine in VHDL with an enumerated \code{state_t} type and a \code{case}
+    process.
+  \item Recognize a Mealy machine on sight and say what its output costs and buys, one clock cycle
+    of latency against one extra state, and why Moore is the default in this book.
+  \item Compose a state machine with previously built subcomponents rather than rewriting them. By
+    the capstone that means three earlier chapters' modules around a machine that is the only new
+    logic, drawing on the shift and counter idioms of one more.
+\end{itemize}
+
+\needspace{6\baselineskip}
+\subsection*{Questions to test yourself}
+You should be able to explain:
+\begin{enumerate}
+  \item What makes a circuit a state machine, rather than just a register with some logic around
+    it?
+  \item In the hand-designed machine, what exactly is \code{X}, and why must it be a one-cycle
+    pulse rather than the button's level?
+  \item Why is that machine's state encoding a Gray code? What could go wrong with an ordinary
+    binary count?
+  \item A counter and a shift register are technically state machines too. What distinguishes them
+    from the machine designed here?
+  \item Which signals is a Moore output allowed to depend on, and a Mealy output? Given a single
+    line of VHDL driving an output, how do you tell which you are looking at?
+  \item In \secref{c8:a5}'s comparison, why does the Moore version need an extra state, and why does
+    its output lag the Mealy version's by exactly one clock cycle?
+  \item In \file{fsm_led.vhd}, why does \code{LED_PROCESS} only ever read \code{state}, never
+    \code{button_edge_s2} or \code{button_n} directly? What would change if it did?
+  \item Why is \code{din} in \code{seq_detect_mealy} not passed through a synchronizer, unlike
+    \code{reset_n}?
+  \item What does \code{when others} buy you in a state-transition \code{case}, given that
+    \code{state_t} has only the values you declared?
+  \item In the capstone receiver, why does the timer run at sixteen times the baud rate rather than
+    once per bit, and why does sampling in the middle of a bit make the design tolerate a
+    transmitter whose clock is slightly different from yours?
+  \item The capstone transmitter uses a whole-bit timer and needs no mid-bit anything. What does it
+    have that the receiver doesn't, that makes the difference?
+\end{enumerate}
+
+\needspace{6\baselineskip}
+\subsection*{Where this leaves you}
+This is the final chapter of \emph{Digital Design with VHDL}. Over eight chapters the book moved
+from gates and Karnaugh maps, through registers, metastability, and the VHDL language, to counters,
+shift registers and timers, and now finite state machines, at every step reasoning about a circuit
+by hand before writing it in synthesizable VHDL and watching it run on a real FPGA. Every pattern
+built along the way, the double-flop synchronizer, the \code{process}/\code{case} coding style, and
+now the Moore state machine, was reused again in this chapter's own examples, and carries forward
+unchanged into whatever you build next.

@@ -1,0 +1,55 @@
+% Section 6.8, from lectures/L06/README.md: the objectives, the questions to test yourself, and the
+% next lecture.
+
+\needspace{10\baselineskip}
+\section{Review}
+\label{c6:sec:review}
+
+\subsection*{What you should be able to do now}
+After this chapter, you should be able to:
+\begin{itemize}
+  \item Build a 4-bit counter as a gate network, and explain, pointing at your own drawing, why
+    nothing in it makes the count return to zero.
+  \item Implement the same counter in VHDL, explain wraparound as a consequence of the register's
+    bit width, and say why a simulator objects to a wrap the hardware performs happily.
+  \item Implement a shift register in both SIPO and PISO configurations, know which fits which
+    job, and know which direction this book shifts in and why sticking to one matters.
+  \item Combine a counter with a shift register to detect that a complete word has arrived, and
+    verify a clocked design by running its testbench.
+\end{itemize}
+
+\needspace{6\baselineskip}
+\subsection*{Questions to test yourself}
+You should be able to explain:
+\begin{enumerate}
+  \item Why does a \code{natural range 0 to 15} counter return to \code{0} after \code{15} with no
+    explicit ``if at maximum, clear it'' logic? What has to be true of the range? Which element
+    performs the wrap?
+  \item A VHDL simulator aborts on the wrap your CircuitVerse drawing performs without complaint.
+    Which of the two is modelling the hardware, and what does that tell you about trusting either
+    alone?
+  \item What is the practical difference between a SIPO and a PISO shift register? Which would you
+    reach for to receive a stream of serial bits, and which to drive a chain of LEDs from a fixed
+    pattern?
+  \item A shift register and a counter are both ``N flip-flops sharing a clock''. What differs is
+    what feeds each flip-flop's input. Describe that difference for each.
+  \item In \code{serial_rx8}, why is \code{data_ready} a one-cycle pulse rather than a level that
+    stays high once a byte has arrived?
+  \item Why does \code{shift_enable} have to gate the bit counter as well as the shift itself?
+  \item The board demonstration drives \code{shift_enable} from a button rather than slowing the
+    clock down. Why is slowing the clock the wrong answer, and what would break if the button were
+    wired to \code{shift_enable} without passing through \code{button_sync} first?
+  \item \code{data_ready} needs a flip-flop of its own before an LED can show it. Which earlier
+    chapter's problem is that, in different clothes?
+\end{enumerate}
+
+\needspace{6\baselineskip}
+\subsection*{Looking ahead}
+Chapter~\ref{c7:ch} is about timers:
+\begin{itemize}
+  \item Timers: a counter with a target count, which is what turns clock ticks into real time.
+  \item Built by adding exactly two things to the counter you drew here, a comparator and a clear,
+    so keep that CircuitVerse project.
+  \item The walking LED: this chapter's shift register, paced by that timer and started by a
+    synchronized button, built live in the course and run on the DE0-CV board.
+\end{itemize}

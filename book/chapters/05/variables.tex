@@ -1,0 +1,295 @@
+% Sections 5.1 to 5.4, from lectures/L05/appendix/a_variables_and_hardware.md: one section per
+% part, A.1 to A.4.
+
+\section{What This Chapter Is About}
+\label{c5:a1}
+Every construct you need in order to describe hardware, you have already used: \code{entity} and
+\code{architecture} in Chapter~\ref{c1:ch}, \code{std_logic_vector}, \code{process} and \code{case}
+in Chapter~\ref{c2:ch}, the clocked process and the scheduling rule in Chapter~\ref{c3:ch},
+subcomponents and generics in Chapters~\ref{c2:ch} and~\ref{c4:ch}.
+
+Two things are left, and they are the two hardest to work out on your own:
+\begin{itemize}
+  \item The first is \code{variable}, the one construct the book has not needed until now:
+    \begin{itemize}
+      \item It looks like a signal and behaves nothing like one, and the difference is exactly the
+        kind that produces a design which simulates plausibly and is quietly wrong.
+      \item \Secref{c5:a2} works through the case where it bites.
+    \end{itemize}
+  \item The second is what any of this actually becomes:
+    \begin{itemize}
+      \item Since Chapter~\ref{c1:ch} you have taken it on trust that the synthesis tool builds the
+        circuit you described. It does, but not out of anything you would recognize.
+      \item \Secref{c5:a3} opens the box. An FPGA turns out to contain no gates at all, which is why
+        Chapter~\ref{c2:ch}'s Karnaugh maps bought you less than they seemed to. Your clock has a
+        speed limit, and something specific sets it. And a \code{case} with a branch missing will
+        quietly hand you a memory element nobody asked for.
+    \end{itemize}
+\end{itemize}
+Neither section answers ``is my logic right?'' You have been answering that since
+Chapter~\ref{c1:ch}. They answer the two questions after it: is this what I meant, and will it fit
+and run.
+
+\section{\code{variable}: Process-Local Storage with an Immediate Update}
+\label{c5:a2}
+A \code{variable} is declared inside a \code{process}, between \code{process(...)} and
+\code{begin}. The critical difference from a \code{signal}: variable assignment uses \code{:=} and
+takes effect \textbf{immediately}, so the very next statement that reads it sees the updated value,
+exactly like an assignment in C. There is no scheduling, none of the
+wait-until-the-process-suspends delay that \secref{c3:a6} spelled out for signals, and no ``last
+assignment wins''.
+
+\begin{booktable}{@{}p{9.5em}LL@{}}
+  & \thead{\code{signal} (\code{<=})} & \thead{\code{variable} (\code{:=})} \\
+  \midrule
+  Declared & Architecture's declarative part & Process's declarative part \\
+  Visible from & Anywhere in the architecture & Only within its own process \\
+  Update timing & Scheduled: applied when the process next suspends & Immediate: applied before
+    the next statement \\
+  Repeated assignment in one pass & Only the last one survives; earlier ones are discarded & Every
+    one takes effect, in order \\
+\end{booktable}
+
+\subsection{Why this actually matters: an XOR-parity generator}
+\label{c5:parity}
+An entity computing the XOR-parity of an 8-bit input, \code{'1'} if \code{bits} has an odd number of
+set bits:
+
+\begin{vhdlcode}
+entity parity_gen is
+    port(bits  : in  std_logic_vector(7 downto 0);
+         parity: out std_logic);
+end entity;
+\end{vhdlcode}
+
+\noindent Coming from software, the first instinct is to accumulate the running XOR in a loop, using
+a signal as the accumulator:
+
+\begin{vhdlcode}
+-- Don't do this: shown to demonstrate why it doesn't work.
+architecture broken of parity_gen is
+signal parity_s: std_logic;
+begin
+    parity <= parity_s;
+
+    process(bits) is
+    begin
+        parity_s <= '0';
+        for i in bits'range loop
+            parity_s <= parity_s xor bits(i);
+        end loop;
+    end process;
+end architecture;
+\end{vhdlcode}
+
+\noindent Trace one pass, using the scheduling rule from \secref{c3:a6}: every read of
+\code{parity_s} returns whatever it held \emph{before this pass started} (call it
+\code{old_parity}), and only the last assignment survives.
+\begin{itemize}
+  \item \code{parity_s <= '0';} schedules \code{'0'}. Not yet applied.
+  \item \code{i = 7} (\code{bits'range} on \code{(7 downto 0)} runs high-to-low): reads
+    \code{parity_s}, gets \code{old_parity}, because the \code{'0'} has not applied. Schedules
+    \code{old_parity xor bits(7)}, discarding the \code{'0'}.
+  \item \code{i = 6}: reads \code{parity_s}, again \code{old_parity}. Schedules
+    \code{old_parity xor bits(6)}, discarding the previous one.
+  \item \ldots and so on for every iteration \ldots
+  \item \code{i = 0}, the last statement in the pass: still reads \code{old_parity}, schedules
+    \code{old_parity xor bits(0)}, discarding everything before it.
+  \item The process suspends and \code{parity_s} becomes \code{old_parity xor bits(0)}, the only one
+    of nine scheduled assignments that survived.
+\end{itemize}
+The result depends only on \code{bits(0)} and on whatever \code{parity_s} happened to already hold.
+Seven iterations and the initial \code{'0'} were computed and thrown away. This is not a corner
+case: it is what a signal-as-accumulator \emph{always} does, because every iteration reads the same
+frozen value and only the textually last assignment is kept.
+
+There is a second thing wrong with it, which the trace does not show. The surviving assignment is
+\code{parity_s <= parity_s xor bits(0);}, and \code{parity_s} is not in the sensitivity list: as
+hardware that is a \textbf{combinational feedback loop}, an output fed back to its own input through
+a gate with no flip-flop in the path. GHDL analyzes and simulates it happily, which is how the bug
+reaches a simulation at all; Quartus reports the loop rather than building it. The lesson is the
+same one either way, and the fix below removes both problems at once.
+
+The same computation with a \code{variable}:
+
+\begin{vhdlcode}
+architecture behaviour of parity_gen is
+signal parity_s: std_logic;
+begin
+    parity <= parity_s;
+
+    PARITY_PROCESS: process(bits) is
+        variable acc: std_logic;
+    begin
+        acc := '0';
+        for i in bits'range loop
+            acc := acc xor bits(i);
+        end loop;
+        parity_s <= acc;
+    end process;
+end architecture;
+\end{vhdlcode}
+
+\noindent Now \code{acc := '0'} applies immediately; \code{i = 7} reads \code{'0'}, XORs in
+\code{bits(7)} and updates \code{acc} at once; \code{i = 6} reads that just-updated value, and so on
+through every iteration. The loop ends with \code{acc} holding the true XOR of all eight bits, and
+\code{parity_s <= acc;} schedules that one correct value, the only assignment to \code{parity_s} in
+the pass.
+
+This is the on-disk worked example, \file{lectures/L05/parity_gen/parity_gen.vhd}, in full:
+
+\vhdlfile{lectures/L05/parity_gen/parity_gen.vhd}
+
+\subsection{What that loop is not}
+\label{c5:loopnot}
+It is not eight steps the hardware performs one after another. This is where a C background
+misleads hardest, so it is worth stating outright: a \code{for} loop whose bounds are fixed at
+elaboration is \textbf{unrolled} by the synthesis tool. Those eight iterations become eight XOR
+gates in a chain, all settling within one propagation delay, in the same clock cycle. There is no
+counter for \code{i}, no branch, no iteration in time. The loop writes eight gates in three lines;
+it does not do eight things in sequence.
+
+That is also why \code{acc}, which reads like a running total, costs no storage at all. It never has
+to survive a clock edge: each of its values is just the wire between two of those XOR gates. A
+\code{variable} is the right tool precisely because it never outlives one pass.
+
+The same goes for \code{bits'range}. The \code{'range} \textbf{attribute} gives the index range of
+\code{bits}, here \code{7 downto 0}, so the loop covers every bit without writing the bounds twice.
+It is resolved at elaboration, like everything else in the loop header, which is exactly why the
+tool can unroll it. \code{for i in 0 to 1 loop} in Chapter~\ref{c3:ch}'s \file{led_toggle.vhd}
+means the same thing: both bits get their own gates and both update in the same cycle.
+
+\subsection{The rule of thumb}
+\label{c5:rule}
+\begin{itemize}
+  \item Use a \code{variable} for a scratch computation consumed entirely within one pass: loop
+    accumulators, temporary swaps, intermediate values handed off to a signal at the end, exactly
+    like \code{acc}.
+  \item Use a \code{signal} for anything another process or the outside world reads, and anything
+    that must hold its value across separate passes (a counter, or a shift register's stored bits,
+    both in Chapter~\ref{c6:ch}).
+\end{itemize}
+A variable \emph{can} retain its value between passes through the same process, behaving like
+static local storage rather than a fresh local each time, so it is possible to build state with
+one. But because its updates are immediate rather than scheduled, it behaves differently from a
+signal used the same way, particularly for anything modelling a chain of registers stepping one
+stage per clock edge. If state genuinely needs to persist and be read by other logic, reach for a
+\code{signal}: the scheduled-update semantics is what makes Chapter~\ref{c6:ch}'s counters and
+shift registers work.
+
+\section{What the FPGA Actually Builds}
+\label{c5:a3}
+
+\subsection{The two things the fabric is made of}
+\label{c5:fabric}
+An FPGA is not a blank slate onto which gates are etched. It is a fixed grid of identical small
+blocks, manufactured before anybody wrote your VHDL, and ``synthesis'' is working out how to
+configure them so they behave like the circuit you described. Two matter here:
+\begin{itemize}
+  \item A \textbf{look-up table}, or \textbf{LUT}: a tiny memory, typically four to six inputs and
+    one output. Load it with the truth table of any Boolean function of those inputs and it computes
+    that function. This is the honest answer to ``what does a gate become on an FPGA'': nothing
+    becomes a gate. A four-input LUT computes \code{a and b}, \code{a xor b or (c and not d)}, or
+    any other function of up to four inputs at exactly the same cost, because in every case it is
+    the same block holding a different table.
+  \item A \textbf{flip-flop}: one bit of clocked storage, sitting next to each LUT.
+\end{itemize}
+On the DE0-CV's Cyclone V these come packaged together as an \textbf{ALM}, holding a fracturable
+six-input LUT, usable as one six-input function or two smaller ones, plus four flip-flops. That is
+the unit the Quartus fitter report counts, which is why it talks about ALMs rather than gates.
+
+That is nearly the whole story. \code{register4} becomes four flip-flops, \code{mux_8to1} a handful
+of LUTs, and Chapter~\ref{c8:ch}'s state machine LUTs feeding the flip-flops that hold the state.
+
+It also explains something from Chapter~\ref{c2:ch} that would otherwise look like a broken
+promise: the book had you minimize expressions with Karnaugh maps to save gates, then never
+mentioned the saving again. On an FPGA a four-input function costs one LUT whether you minimized it
+or not. Minimization still matters: it is how you understand a circuit, it is exactly right for the
+discrete-logic and ASIC flows K-maps were invented for, and reducing a function below the LUT's
+input width is what stops it needing a second level of LUTs. But on this board it usually buys you
+nothing, and it is better to know that than to wonder.
+
+\subsection{Why a clock has a speed limit}
+\label{c5:fmax}
+Signals take time to get through a LUT and along the wires between blocks. That \textbf{propagation
+delay} is why a clock cannot go arbitrarily fast.
+
+Picture the shape every design in this book has, a flip-flop, some combinational logic, another
+flip-flop:
+\begin{itemize}
+  \item On a rising edge the first presents a new value, which has to travel through every LUT and
+    wire between the two and \emph{settle} before the next edge arrives.
+  \item If it has not, the second flip-flop captures a value that is still changing, and the design
+    does the wrong thing reliably and mysteriously.
+\end{itemize}
+So the clock period has to cover three things:
+\begin{itemize}
+  \item The first flip-flop's \textbf{clock-to-Q} delay: the time between the edge and its output
+    actually changing.
+  \item The \textbf{combinational delay} through the LUTs and wires between the two.
+  \item The second flip-flop's \textbf{setup time}.
+\end{itemize}
+The slowest such path is the \textbf{critical path}, and one over that total is the \textbf{Fmax}.
+
+Quartus computes Fmax for you, in the timing analyzer stage of the Quartus workflow
+(Appendix~\ref{app:quartus}), but only if you tell it what the clock is. That means an \code{.sdc}
+constraints file with a \code{create_clock} on the \code{50 MHz} input. Without one the analyzer has
+no period of yours to compare anything against, so it warns that no base clocks were constrained
+and reports Fmax against a default clock instead: a number, but not one you can act on. Separately,
+a design that ``fails timing'' is one where some path turned out slower than the period you did
+declare.
+
+\textbf{None of that is part of this book.} You will not write an \code{.sdc}, read a timing
+report, or meet a design that fails timing, because every design here fits inside 20\,ns with room
+to spare. It is worth knowing the step exists and what it needs, so that you recognize it the first
+time a design of yours gets close to the limit.
+
+\noindent Two consequences worth carrying forward:
+\begin{itemize}
+  \item \textbf{Deep combinational logic costs you speed, not the number of flip-flops.} Chaining a
+    long expression between two registers lengthens the critical path; splitting it so part of the
+    work happens on one cycle and the rest on the next shortens it. That trade, more registers for a
+    faster clock, is the single most common move in high-speed digital design.
+  \item \textbf{\code{50 MHz} is a 20\,ns budget.} That is the number every path in your design is
+    racing against, and it is a lot of time at these speeds.
+\end{itemize}
+
+\subsection{The latch you get by accident}
+\label{c5:latch}
+Chapter~\ref{c3:ch} built a D latch, showed it was transparent while enabled, then set it aside in
+favour of the flip-flop. Here it comes back uninvited.
+
+\Secref{c2:a5} required a \code{when others} on every \code{case}, and gave the language's reason: a
+\code{case} has to cover every value of its selector's type. The general rule behind it is that a
+combinational \code{process} must assign its output on \emph{every} path through it, and that
+reason is now sayable:
+\begin{itemize}
+  \item VHDL requires a signal to keep its old value if nothing assigns a new one.
+  \item If some path through your process leaves \code{x} unassigned, you have said \code{x} must
+    \emph{remember} its previous value on that path, and remembering is not something combinational
+    logic can do.
+  \item So the tool builds the only thing that can: a latch, exactly the one from \secref{c3:a2}.
+\end{itemize}
+That is an \textbf{inferred latch}, and it is almost never what anybody meant. It is a warning
+rather than an error, the design will often appear to work, and the message is worth recognizing:
+
+\begin{console}
+Warning: Inferred latch(es) for signal "x"
+\end{console}
+
+\noindent The fix is never to add a latch on purpose. It is to assign the signal on every path,
+which is the rule you were already following.
+
+\section{Looking Ahead}
+\label{c5:a4}
+Nothing in Chapters~\ref{c6:ch} to~\ref{c8:ch} introduces a new idiom. Counters, shift registers and
+timers all hold state across clock edges using \secref{c3:a6}'s clocked process and the scheduling
+rule above, and Chapter~\ref{c8:ch}'s state machines add only an enumerated type, a \code{case} on
+it, and one new concurrent form, the conditional signal assignment. What changes is what the state
+is used for.
+
+Two things to watch for. Chapter~\ref{c6:ch}'s \code{serial_rx8} is the first design whose
+correctness you cannot check by eye on an LED, which is where the provided testbenches stop being a
+formality. And \secref{c4:a8}'s generic goes to work immediately: Chapter~\ref{c7:ch}'s \code{timer}
+uses one for its tick count, and \code{walking_led} instantiates that timer alongside
+\code{reset_sync} and \code{button_sync}, writing almost no logic of its own.

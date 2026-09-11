@@ -1,0 +1,140 @@
+% Short answers to Chapter 8's exercises, lectures/L08/appendix/b_exercises.md. Exercises 8.3 and
+% 8.4 are VHDL only and have no entry.
+
+\answerchapter{c8:ch}
+
+\answer{c8:ex:1}{A binary-count Moore machine}
+\pt{a}Four bubbles, \code{00/0}, \code{01/0}, \code{10/1} and \code{11/1} as \code{Q1Q2/Y}, in a ring
+\code{00 -> 01 -> 10 -> 11 -> 00} with one arrow per state labelled \code{X = 1}, a self-loop labelled
+\code{X = 0} on each, and reset entering \code{00}.
+\pt{b}\begin{tabular}[t]{@{}l@{\quad}*{8}{c}@{}}
+  \code{Q1Q2X} & 000 & 001 & 010 & 011 & 100 & 101 & 110 & 111 \\
+  \midrule
+  \code{Q1+} & 0 & 0 & 0 & 1 & 1 & 1 & 1 & 0 \\
+  \code{Q2+} & 0 & 1 & 1 & 0 & 0 & 1 & 1 & 0 \\
+  \code{Y} & 0 & 0 & 0 & 0 & 1 & 1 & 1 & 1 \\
+\end{tabular}
+\pt{c}\code{Q1+ = Q1X' + Q1Q2' + Q1'Q2X}: two pairs and the lone cell \code{011}, all three
+essential (it is \code{Q1} XOR \code{Q2X}). \code{Q2+ = Q2X' + Q2'X}, two pairs, which is
+\code{Q2 XOR X}. \code{Y = Q1}, one group of four.
+\ptnote{Tip}With the LED lit only in \code{10}, \code{Y = Q1Q2'} is decoded from both bits, and on the
+\code{11 -> 00} transition, if \code{Q2} falls before \code{Q1}, the state reads \code{10} for an
+instant and \code{Y} glitches high. If \code{Y} drove something that cared, register it: a flip-flop
+loaded with \code{Q1+Q2+'}, so \code{Y} changes only on the clock edge.
+
+\answer{c8:ex:2}{A Moore \code{1, 0, 1} detector}
+\pt{a}Four states: \code{S0} nothing matched, \code{S1} saw \code{1}, \code{S2} saw \code{10}, and
+\code{S3} saw \code{101}, the only state with \code{y = 1}; reset enters \code{S0}. Its arrows are the
+rows of the table in \textbf{b)}.
+\pt{b}\begin{tabular}[t]{@{}l@{\quad}*{8}{c}@{}}
+  state, \code{din} & \code{S0},0 & \code{S0},1 & \code{S1},0 & \code{S1},1 & \code{S2},0 &
+    \code{S2},1 & \code{S3},0 & \code{S3},1 \\
+  \midrule
+  next state & \code{S0} & \code{S1} & \code{S2} & \code{S1} & \code{S0} & \code{S3} & \code{S0} &
+    \code{S1} \\
+  \code{y} & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\
+\end{tabular}
+\pt{c}For example, \code{din = 1, 1, 0, 1, 0, 1}:\par\smallskip
+\noindent\begin{tabular}{@{}l@{\quad}*{6}{c}@{}}
+  cycle & 1 & 2 & 3 & 4 & 5 & 6 \\
+  \midrule
+  state before & \code{S0} & \code{S1} & \code{S1} & \code{S2} & \code{S3} & \code{S0} \\
+  \code{din} & 1 & 1 & 0 & 1 & 0 & 1 \\
+  \code{y} & 0 & 0 & 0 & 0 & 1 & 0 \\
+\end{tabular}\par\smallskip
+\noindent\code{y} is high in cycle 5, the cycle after the match's last bit; the \code{1, 0, 1} in
+bits 4 to 6 overlaps the match and is correctly not reported.
+\pt{d}A \code{0} in \code{S0}, \code{S2} or \code{S3} returns to the start. A \code{1} in
+\code{S1} must stay in \code{S1}, not fall back to \code{S0}, because that \code{1} is itself the
+first bit of a possible match (\code{1101} ends in \code{101}); likewise a \code{1} in \code{S3} goes
+to \code{S1}, since non-overlapping discards the match's bits but not a new one. A \code{0} in
+\code{S2} goes all the way back, because \code{100} ends in no prefix of \code{101}.
+
+\answer{c8:ex:5}{Accounting for \code{fsm_led}}
+\pt{a}A timeout comes every \code{TICK_COUNT + 1} = 5,000,001 cycles of 20\,ns, 100\,ms. The blink
+frequency is 5\,Hz: the LED toggles once per timeout, so one on-and-off cycle takes two timeouts,
+200\,ms, and the 10\,Hz you might first write down is the toggle rate.
+\pt{b}The override is \code{constant TIMER_TICK_COUNT: natural := 3;}, passed in by
+\code{generic map(TIMER_TICK_COUNT)}. One real blink period is 2 $\times$ 5,000,001, about ten million
+clock cycles: 200\,ms of simulated time at 50\,MHz, far past the 10\,ms \code{--stop-time}, and
+tens of thousands of times longer than the whole testbench takes with the override.
+\pt{c}\begin{itemize}
+  \item From \code{STATE_OFF}, three presses of \code{button_n(0)} visit \code{STATE_BLINK},
+    \code{STATE_ON} and \code{STATE_OFF} in turn; three presses of \code{button_n(1)} visit
+    \code{STATE_ON}, \code{STATE_BLINK} and \code{STATE_OFF}.
+  \item The machine stays where it is. The two lines are the assignments to \code{to_prev_state} and
+    \code{to_next_state}, each of which requires the other button's edge to be \code{'0'}.
+  \item The timer resumes from wherever it was frozen, so the first toggle after re-entry comes
+    anywhere from one cycle to a full period later, and the first blink interval is short. Holding
+    \code{timer_enable} high is neither better nor worse for correctness, since re-entry would still
+    catch the timer at an arbitrary point in its period; it only keeps a counter switching, and
+    spending power, when nothing reads it.
+\end{itemize}
+
+\answer{c8:ex:6}{The serial receiver}
+\pt{a}\begin{itemize}
+  \item \code{STATE_IDLE}: leaves on a tick with \code{rx_s2 = '0'} and the previous tick's
+    \code{rx_s2 = '1'}, clearing \code{ticks}; the history is one flip-flop loaded with
+    \code{rx_s2} on every tick.
+  \item \code{STATE_START}: waits 8 ticks; then \code{rx_s2} low goes to \code{STATE_DATA},
+    clearing \code{ticks}, and high goes back to \code{STATE_IDLE}.
+  \item \code{STATE_DATA}: waits 16 ticks per bit, eight times; each sample shifts \code{rx_s2} into
+    \code{frame} and clears \code{ticks}, and the eighth moves on to \code{STATE_STOP}.
+  \item \code{STATE_STOP}: waits 16 ticks; then goes to \code{STATE_IDLE}, pulsing
+    \code{byte_valid} with \code{data_out <= frame} if \code{rx_s2} is high, and \code{frame_err} if
+    it is low.
+  \item Every state has a self-loop for ``no tick yet, or not the right count yet''.
+\end{itemize}
+\pt{b}\begin{itemize}
+  \item 50,000,000 / 9600 = 5208.33 cycles per bit, and 325.52 per sixteenth.
+  \item \code{TICK_COUNT} = 324.52. 324 gives 325-cycle ticks, 0.52 cycles short ($-0.16\%$); 325
+    gives 326, 0.48 cycles long ($+0.15\%$). The default is 325, the closer of the two.
+  \item 9.5 bit periods is 152 ticks: 152 $\times$ 326 = 49,552 cycles against 49,479, about 73 cycles
+    late, 0.22 of a tick. The margin was 8 ticks, half a bit.
+  \item The drift within one frame would have to reach the margin: at 0.024 of a tick per bit,
+    that is a frame of some 340 bit periods (less once the crystals' own tolerance adds to it).
+\end{itemize}
+\pt{e}\begin{itemize}
+  \item The low-stop-bit frame is handed over as a byte and \code{frame_err} never pulses. The
+    first check to fire is ``a frame with a low stop bit must raise \code{frame_err}!'', which the
+    testbench makes before its byte-count check.
+  \item Add a case that pulls \code{rx} low on an idle line for a few ticks, well under half a bit,
+    then holds it high for longer than a frame, and asserts that neither \code{valid_count} nor
+    \code{error_count} changes. Without the re-check the glitch starts a frame of all ones with a
+    high stop bit, and \code{x"FF"} is handed over as a byte.
+  \item The testbench's transmitter runs off the receiver's own clock at exactly sixteen ticks a
+    bit, so nothing drifts, and even its noisy frame holds each bit clean from tick 3 to tick 13.
+    What is given away is the margin on the early side, down from 8 ticks to 3 or less, so a
+    slightly slow transmitter or a slow edge reads the previous bit.
+  \item A simulator models every signal as a clean \code{'0'} or \code{'1'} changing at an exact
+    instant, and every flip-flop as sampling perfectly; it has no setup and hold window, so it
+    cannot produce metastability (and the testbench changes \code{rx} just after a clock edge
+    anyway). The failure is physical and probabilistic, so only the rule prevents it.
+  \item It promises that for the stimuli the testbench applies, in an ideal simulation, the outputs
+    are the ones it checks for. It does not promise anything about inputs it never applies, such as
+    glitches or drifting clocks, about timing margin, or about what the simulator does not model:
+    metastability, glitches and timing on the real chip.
+\end{itemize}
+
+\answer{c8:ex:7}{The serial transmitter}
+\pt{a}Idle: \code{tx = '1'}; on \code{send = '1'}, latch \code{data_in} into \code{frame} (the
+byte is captured here) and start the timer. Start bit: \code{tx = '0'} for one timeout. Data:
+\code{tx = frame(7)}, shifting \code{frame} up one place per timeout, eight times. Stop:
+\code{tx = '1'} for one timeout, then idle. \code{busy} is \code{'1'} whenever the state is not
+idle.
+\pt{e}\begin{itemize}
+  \item \code{busy} drops at the end of the eighth data bit, so a producer that sends the next byte
+    straight away puts its start bit right after the last data bit, with no stop bit. The receiver
+    samples its stop bit inside that start bit and rejects the frame with \code{frame_err}, and if
+    the last data bit was \code{0} the new start bit has no falling edge for it to find. It first
+    shows up on the first pair of bytes sent back to back; one byte followed by idle looks perfect.
+  \item The check ``\code{busy} must stay asserted for the whole stop bit!'', made in the middle of
+    the first frame's stop bit. On \code{tx} a skipped stop bit is idle, which is the same high
+    level, so the line is identical until another frame follows; only \code{busy} shows that the
+    transmitter thinks the frame is over.
+  \item The sample point moves 1\% of a bit per bit and starts half a bit from either edge, so it
+    reaches the wrong bit about 50 bits in (nearer 44 counting the tick of start-edge uncertainty).
+    A ten-bit frame drifts only a tenth of a bit, so a start bit per byte resynchronizes long before
+    the drift matters, where a single start bit for a long message would lose it within a few
+    bytes.
+\end{itemize}

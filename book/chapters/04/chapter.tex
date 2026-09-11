@@ -1,0 +1,58 @@
+% Chapter 4, typeset from lectures/L04: the README is the opener and the closing review, and each
+% part of Appendix A is a section, in the same order and with the same subsections. Appendix B,
+% the exercises, is the last section.
+
+\chapter{Metastability and Synchronization}
+\label{c4:ch}
+
+{\large\itshape Making an asynchronous input safe to use in a synchronous system.\par}
+
+\begin{chapterbox}{In this chapter}
+\begin{itemize}
+  \item Why an asynchronous input can break the clean edge detectors and registers built in
+    Chapter~\ref{c3:ch}.
+  \item Metastability: what it is, and why it cannot simply be designed away.
+  \item The double-flop synchronizer, and the assert-asynchronously, release-synchronously reset
+    pattern.
+  \item Reusing the same chain for edge detection, and what it does and does not do about bounce.
+  \item Generics: one module serving several sizes.
+  \item \code{led_toggle_sync}, and what it does on the DE0-CV when a real, bouncing push button
+    drives it.
+  \item Setup/hold timing detail (\secref{c4:a4}), and what a real debounce adds (\secref{c4:a7}).
+\end{itemize}
+\end{chapterbox}
+
+This chapter takes Chapter~\ref{c3:ch}'s LED toggle and makes it safe for a real button. The course
+builds it live, in this order: first as a gate network in CircuitVerse, with two flip-flops in
+front of the button, two in front of the reset, and the edge detector behind them; then in VHDL,
+as \code{reset_sync}, which asserts asynchronously and releases synchronously, and
+\code{button_sync}, the three-flop chain with a \code{generic} so that one file serves a design
+with one button and a design with two; then \code{led_toggle_sync}, the two subcomponents wired
+together around the toggle logic, which is all that is left of the original circuit; and finally
+onto the board. Before the synchronizer goes in, predict what a real, asynchronous button does to
+Chapter~\ref{c3:ch}'s edge detector. That prediction is the reason for the whole chapter.
+
+The chapter opens with metastability itself, and the argument worth holding on to is why two
+flip-flops make the failure \emph{unlikely} rather than impossible: that is the part that does not
+survive being remembered as a rule of thumb. Two parts of the material are ones the course leaves
+to reading rather than presenting: the setup/hold timing detail in \secref{c4:a4}, beyond the fact
+that the window exists and that violating it is what causes the trouble; and \secref{c4:a7}, on
+what a real debounce circuit adds. Both come back in the review questions and are drilled by
+Exercises~\ref{c4:ex:2} and~\ref{c4:ex:7}, so they are not optional.
+
+Before you read on, be comfortable with D flip-flops, clocking and edge detection from
+Chapter~\ref{c3:ch}; this chapter assumes all of it. It also builds on \secref{c2:a6}: its worked
+example is composed from two subcomponents, and \secref{c4:a8} adds the \code{generic} that lets one
+of them serve designs with different numbers of buttons. Afterwards, work through the exercises and
+read \file{lectures/L04/led_toggle_sync/led_toggle_sync.vhd}. Its \code{reset_sync} and
+\code{button_sync} subcomponents are Exercises~\ref{c4:ex:8} and~\ref{c4:ex:9} rather than files in
+the repository, so do those first, copy your own into \file{led_toggle_sync/}, and then run its
+testbench. If this chapter does not click on the first read, Erik Pihl's video walkthrough of
+metastability and the double-flop synchronizer (\url{https://www.youtube.com/watch?v=KrssJRgF13I})
+and the metastability pages at nandland (\url{https://nandland.com/lesson-13-metastability/}) and
+VHDLwhiz (\url{https://vhdlwhiz.com/terminology/metastability/}) cover the same concept from a
+slightly different angle.
+
+\input{chapters/04/synchronization}
+\input{chapters/04/summary}
+\input{chapters/04/exercises}

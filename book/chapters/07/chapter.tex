@@ -1,0 +1,43 @@
+% Chapter 7, typeset from lectures/L07: the README is the opener and the closing review, and each
+% part of Appendix A is a section, in the same order. Appendix B, the exercises, is the last
+% section.
+
+\chapter{Timers}
+\label{c7:ch}
+
+{\large\itshape A counter with a target count, drawn by hand before it is written.\par}
+
+\begin{chapterbox}{In this chapter}
+\begin{itemize}
+  \item Timers: a counter that raises a flag once it reaches a target count.
+  \item Turning clock ticks into real time, and the equality comparator that does it.
+  \item The same timer in VHDL, made reusable by a \code{generic} rather than by rewiring.
+  \item Composing a design out of pre-built modules instead of rewriting their logic.
+  \item \code{walking_led} demonstrated on the DE0-CV: a single lit bit walking a row of LEDs.
+\end{itemize}
+\end{chapterbox}
+
+This chapter builds a timer twice and then puts it to work. The first is a 4-bit timer in
+CircuitVerse: Chapter~\ref{c6:ch}'s counter, plus an XNOR equality comparator and the clear that
+makes it repeat, watched as \code{timeout} fires once every eleven edges, for exactly one edge. The
+second is the same timer in VHDL, as a reusable module with its target count as a \code{generic}.
+Then comes \code{walking_led}: the timer just written, plus Chapter~\ref{c4:ch}'s
+\code{reset_sync} and \code{button_sync} unchanged, plus a loop to rotate the pattern, and onto the
+board. Almost no new logic: that part is about composing what already exists.
+
+Before the timer in \secref{c7:a2} runs, predict which count \code{timeout} fires on, and why it is
+every eleven edges rather than every ten. The off-by-one is the whole reason the module's generic
+is named \code{TICK_COUNT} and not \code{PERIOD}.
+
+\code{walking_led} is the payoff of the last four chapters: three modules, two of them carried
+unchanged from Chapter~\ref{c4:ch} and one written in this chapter, composed into something you can
+watch from the back of the room. A timer is a counter plus one comparison, and this chapter assumes
+the counter, so be comfortable with \secref{c6:a1} before you start. The synchronizers are not
+re-explained here beyond a short recap. Running the exercises' testbenches, including the
+multi-file \code{ghdl -a} line \code{blinker} and \code{walking_led} need, is covered in
+\secref{c2:app:c}, and the Quartus project setup, pin assignment, compilation and programming used
+for the board demonstration are in Appendix~\ref{app:quartus}.
+
+\input{chapters/07/timers}
+\input{chapters/07/summary}
+\input{chapters/07/exercises}

@@ -1,0 +1,356 @@
+% Section 3.11, from lectures/L03/appendix/b_exercises.md.
+
+\section{Exercises}
+\label{c3:sec:exercises}
+
+\begin{aside}
+\textbf{How to work these.} Each exercise is tagged with the kinds of work it asks for:
+\kinds{Paper} by hand, \kinds{CircuitVerse} in the browser, \kinds{VHDL} in a module of your own.
+
+\textbf{How to check your work.} Every exercise that asks you to write a VHDL module ships a
+self-checking testbench under \file{lectures/L03/exercises} in the companion repository. Write your
+module in its \file{exercises/<module>} directory, using the entity name and the \textbf{port order}
+the exercise specifies, then run it with GHDL; \secref{c2:app:c} has the three commands.
+
+No FPGA board is needed for any exercise. Your job is to get the VHDL right, and the testbench is
+how you confirm it. Short answers to the parts you work on paper are in
+Appendix~\ref{app:answers}; reference solutions to the VHDL are published in the companion
+repository, under \file{lectures/L03/solutions}. Try each exercise yourself before looking at
+either.
+\end{aside}
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{D Latch}
+\label{c3:set:1}
+
+\exercise{A D latch}{Paper, CircuitVerse}
+\label{c3:ex:1}
+Build the first circuit in this book that can \emph{remember} something.
+
+Everything you have built so far has been combinational: the outputs follow the inputs, and the
+moment the inputs change the outputs change with them. A latch is the smallest departure from that.
+It has a data input \code{D} and a control input \code{enable}, and it has two outputs, \code{Q} and
+its complement \code{Qn}. While \code{enable} is high the latch is \textbf{transparent}: \code{Q}
+simply follows \code{D}, and it looks like a wire. The interesting part is what happens when
+\code{enable} goes low. The latch \textbf{locks}, holding whatever \code{D} was at that instant, and
+from then on \code{D} can do what it likes without \code{Q} noticing. That held value is one bit of
+memory, and it is built out of nothing but the gates you already know, wired so that the output
+feeds back into the input.
+
+\code{Qn} is not decoration. The feedback loop is what makes the circuit remember, and the two
+outputs are what feed each other: \code{Q} is computed from \code{Qn} and \code{Qn} from \code{Q}.
+Build it and you can see the loop; that is the point of drawing it by hand before you ever meet the
+VHDL.
+
+Use the equations from \secref{c3:a2}:
+\[ Q = (D' \cdot \bool{enable} + \bool{Qn})' \]
+\[ \bool{Qn} = (D \cdot \bool{enable} + Q)' \]
+
+\begin{parts}
+  \item Realize the corresponding gate network:
+    \begin{itemize}
+      \item Draw the network by hand.
+      \item Recreate and simulate it in CircuitVerse (\url{https://circuitverse.org/simulator}).
+    \end{itemize}
+  \item Test the transparent and locked states:
+    \begin{itemize}
+      \item Set \code{enable = 1}:
+        \begin{itemize}
+          \item Change \code{D}.
+          \item Observe what happens to \code{Q} and \code{Qn}.
+        \end{itemize}
+      \item Set \code{enable = 0}:
+        \begin{itemize}
+          \item Change \code{D} again.
+          \item Observe what happens to \code{Q} and \code{Qn}.
+        \end{itemize}
+      \item Explain the difference between the two cases.
+    \end{itemize}
+  \item Cycle \code{D} and \code{enable} through the following combinations twice:
+    \begin{itemize}
+      \item \code{00}
+      \item \code{01}
+      \item \code{10}
+      \item \code{11}
+    \end{itemize}
+    Confirm that you observe both cases:
+    \begin{itemize}
+      \item The latch locks after being transparent with \code{D = 1}.
+      \item The latch locks after being transparent with \code{D = 0}.
+    \end{itemize}
+    Explain how the value of \code{Q} depends on the value of \code{D} at the instant \code{enable}
+    changes from \code{1} to \code{0}.
+\end{parts}
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{D Flip-Flop}
+\label{c3:set:2}
+
+\exercise{A D flip-flop from two latches}{Paper, CircuitVerse}
+\label{c3:ex:2}
+Extend the D latch from Exercise~\ref{c3:ex:1} into a D flip-flop, following \secref{c3:a3}.
+
+The flip-flop must have:
+\begin{itemize}
+  \item Inputs:
+    \begin{itemize}
+      \item \code{clock}
+      \item \code{reset_n}
+      \item \code{D}
+      \item \code{enable}
+    \end{itemize}
+  \item Outputs:
+    \begin{itemize}
+      \item \code{Q}
+      \item \code{Qn}
+    \end{itemize}
+\end{itemize}
+The reset signal is:
+\begin{itemize}
+  \item Asynchronous:
+    \begin{itemize}
+      \item It takes effect without waiting for a clock edge.
+    \end{itemize}
+  \item Active-low:
+    \begin{itemize}
+      \item Setting \code{reset_n = 0} must force \code{Q} to \code{0} immediately.
+    \end{itemize}
+\end{itemize}
+\note[Tip]
+\begin{itemize}
+  \item The reset has to do two things in each of the two internal latches, not one:
+    \begin{itemize}
+      \item Feed an active-high \code{reset} (\code{reset_n} through a NOT gate) into the NOR gate
+        that produces \code{Q}. This forces \code{Q} low without waiting for a clock edge.
+      \item \code{AND} \code{reset_n} into the AND gate that produces that latch's \code{D} and
+        \code{enable} product. This frees \code{Qn} to go high.
+      \item Gating only the \code{Q} feedback path is not enough: with \code{enable = 1} and
+        \code{D = 1} it leaves \code{Qn} low, and a low \code{Qn} is exactly what holds \code{Q}
+        high, so the reset would do nothing.
+    \end{itemize}
+  \item Drive the enable inputs of the two internal latches using:
+    \begin{itemize}
+      \item \code{clock}
+      \item The inverse of \code{clock}
+    \end{itemize}
+  \item Follow \secref{c3:a3} for how the external \code{enable} input controls whether the
+    flip-flop accepts a new value.
+\end{itemize}
+
+\begin{parts}
+  \item Realize the corresponding gate network:
+    \begin{itemize}
+      \item Draw the network by hand.
+      \item Recreate and simulate it in CircuitVerse.
+      \item Set the clock period to \code{1000 ms}.
+        \begin{itemize}
+          \item This is slow enough to observe the behaviour by eye.
+        \end{itemize}
+    \end{itemize}
+  \item Test the clocked behaviour:
+    \begin{itemize}
+      \item Change \code{D} during the high phase of the clock.
+      \item Change \code{D} during the low phase of the clock.
+      \item Observe \code{Q} and \code{Qn}.
+      \item Confirm that the outputs change only on the active clock edge, never between clock
+        edges.
+    \end{itemize}
+    Explain how the two internal latches work together to produce edge-triggered behaviour.
+  \item Test the asynchronous reset:
+    \begin{itemize}
+      \item First set \code{Q = 1}.
+      \item Assert the reset by setting \code{reset_n = 0}.
+      \item Observe whether \code{Q} resets:
+        \begin{itemize}
+          \item Immediately.
+          \item At the next clock edge.
+        \end{itemize}
+    \end{itemize}
+    Explain the result by referring to the difference between an asynchronous signal and a
+    synchronous signal.
+\end{parts}
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{Registers}
+\label{c3:set:3}
+
+\exercise{A four-bit register}{VHDL, Paper}
+\label{c3:ex:3}
+Write a complete VHDL entity named \code{register4}: four flip-flops side by side, sharing one
+clock, one reset, and one enable.
+
+This is the exercise where the flip-flop stops being a curiosity and becomes a building block. A
+single D flip-flop stores one bit, which is not much use on its own; what a design actually wants is
+somewhere to keep a \emph{number}. Put four flip-flops in a row, wire the same clock to all of them,
+and you have a four-bit register. Nothing about the individual flip-flop changes. Only the width
+does.
+
+The part worth paying attention to is how little the VHDL has to change to say that. You are
+writing the same synchronous process template from \secref{c3:a6} that you already used for one bit,
+with \code{std_logic_vector(3 downto 0)} in place of \code{std_logic}. There is no loop, no
+repetition, no four copies of anything. That is not a shortcut the language is offering you; it is a
+fact about the hardware, and part \textbf{c)} below asks you to say why.
+
+The entity must have:
+
+\begin{booktable}{@{}p{4em}p{4.8em}p{14.6em}L@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
+  \midrule
+  \code{clock} & in & \code{std_logic} & System clock. \\
+  \code{reset_n} & in & \code{std_logic} & Asynchronous, active-low. Clears the register to
+    \code{"0000"}. \\
+  \code{enable} & in & \code{std_logic} & \code{'0'} retains the current value; \code{'1'} captures
+    \code{d} on the next rising edge. \\
+  \code{d} & in & \code{std_logic_vector(3 downto 0)} & The value to capture. \\
+  \code{q} & out & \code{std_logic_vector(3 downto 0)} & The stored value. \\
+\end{booktable}
+
+\noindent Write the process out yourself rather than copying the worked D flip-flop example,
+\file{d_flip_flop.vhd} (\secref{c3:a8}). Typing it is how the template stops being something you
+recognize and starts being something you can produce from memory, and you will be writing it in
+every remaining chapter of this book.
+
+\begin{parts}
+  \item Write the entity and the synchronous process, adapting the template from a single bit to a
+    four-bit vector.
+  \item Check it with the testbench, as described at the start of these exercises.
+  \item Explain why the same template scales from one flip-flop to four without any structural
+    change, while a four-bit \emph{counter} could not simply be four one-bit counters side by side.
+    What is different about the two cases?
+\end{parts}
+
+\modulefigure{register4}
+
+\selfcheck name your entity \code{register4}, with ports \code{clock}, \code{reset_n},
+\code{enable}, \code{d} (\code{std_logic_vector(3 downto 0)}) and \code{q}
+(\code{std_logic_vector(3 downto 0)}), declared in that order; its testbench is in
+\file{exercises/register4}.
+
+% ------------------------------------------------------------------------------------------
+\exerciseset{Edge Detection}
+\label{c3:set:4}
+
+\exercise{An edge-detected toggle}{Paper, CircuitVerse}
+\label{c3:ex:4}
+Construct a circuit that toggles an LED once for every sampled rising edge of a button signal.
+
+Follow:
+\begin{itemize}
+  \item \secref{c3:a7}
+  \item \secref{c3:a9}
+\end{itemize}
+The circuit must have:
+\begin{itemize}
+  \item Inputs:
+    \begin{itemize}
+      \item \code{button}
+      \item \code{clock}
+      \item \code{reset}
+    \end{itemize}
+  \item Output:
+    \begin{itemize}
+      \item \code{led}
+    \end{itemize}
+\end{itemize}
+For this exercise, \code{reset} is active-high, unlike the reset used in the worked example. It is
+still \textbf{asynchronous}, like every reset in this book: assert it and \code{led} clears
+immediately, without waiting for a clock edge. In the template from \secref{c3:a6} that means the
+reset branch stays outside the \code{rising_edge(clock)} test, and only the polarity of the test
+changes.
+
+\note[Tip] Use two flip-flops:
+\begin{itemize}
+  \item One flip-flop stores the previous sampled value of \code{button}.
+    \begin{itemize}
+      \item Use this value to detect a rising edge.
+    \end{itemize}
+  \item One flip-flop stores the current state of \code{led}.
+    \begin{itemize}
+      \item Toggle it only when a rising edge is detected.
+    \end{itemize}
+\end{itemize}
+
+\begin{parts}
+  \item Realize the corresponding gate network:
+    \begin{itemize}
+      \item Draw the network by hand.
+      \item Recreate and simulate it in CircuitVerse.
+      \item Set the clock period to \code{1000 ms}.
+    \end{itemize}
+  \item Test the edge detector:
+    \begin{itemize}
+      \item Hold \code{button} high for several consecutive clock cycles.
+      \item Confirm that \code{led} toggles exactly once.
+      \item Confirm that it does not toggle once per clock cycle.
+    \end{itemize}
+    Explain which stored signal prevents the circuit from repeatedly detecting the same high level
+    as a new rising edge.
+\end{parts}
+
+\exercise{The toggle in VHDL}{VHDL}
+\label{c3:ex:5}
+Implement the circuit from Exercise~\ref{c3:ex:4} in VHDL.
+
+\begin{parts}
+  \item Create an entity named \code{led_toggle_single} with:
+
+\begin{booktable}{@{}p{4em}p{4.8em}p{5.2em}L@{}}
+  \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
+  \midrule
+  \code{clock} & in & \code{std_logic} & System clock. \\
+  \code{reset} & in & \code{std_logic} & Asynchronous, and \textbf{active-high}, unlike every other
+    module in this book. Assert it and \code{led} clears without waiting for a clock edge, so the
+    reset branch belongs outside the \code{rising_edge(clock)} test. \\
+  \code{button} & in & \code{std_logic} & Toggles \code{led} once per press. \\
+  \code{led} & out & \code{std_logic} & The LED state. \\
+\end{booktable}
+
+    Note the single-bit types: the worked example uses \code{std_logic_vector} ports for two buttons
+    and two LEDs, and this one drives a single pair.
+
+    Do not copy \file{led_toggle.vhd} (\secref{c3:a9}) directly. Instead:
+    \begin{itemize}
+      \item Re-derive the two clocked processes yourself:
+        \begin{itemize}
+          \item One process stores the previous value of \code{button}.
+          \item One process stores and toggles the current value of \code{led}.
+        \end{itemize}
+      \item Derive the edge-detection equation for:
+        \begin{itemize}
+          \item A rising edge.
+          \item An active-high button.
+        \end{itemize}
+      \item Use the rising-edge equation from \secref{c3:a7}:
+        \[ \bool{edge} = \bool{current} \cdot \bool{previous}' \]
+    \end{itemize}
+    Do not use the falling-edge equation from the worked example, which uses an active-low button.
+  \item Verify the design with its testbench (see the aside at the start of these exercises).
+
+    The testbench drives the same sequence you would exercise by hand on a board:
+    \begin{itemize}
+      \item It asserts \code{reset} and checks \code{led} is cleared.
+      \item It raises \code{button} and checks \code{led} toggles exactly once.
+      \item It \textbf{holds \code{button} high} for several more clock cycles and checks, after
+        every one of them, that \code{led} does \emph{not} toggle again.
+      \item It releases and presses again, and checks the second press toggles \code{led} once more:
+        back off, since the first press had turned it on.
+      \item It releases and presses a third time, so the LED is lit when the reset arrives.
+      \item It asserts \code{reset} with \code{led} lit and \textbf{no clock edge following}, and
+        checks \code{led} clears anyway. This is the one that fails if you put the reset inside the
+        \code{rising_edge(clock)} branch.
+    \end{itemize}
+    That third check is the one that fails if your edge detector is wrong:
+    \begin{itemize}
+      \item An \code{led} that toggles on every clock cycle while the button is held means you drove
+        the toggle from \code{button}'s \textbf{level} rather than from its edge.
+      \item Re-read the equation above: \code{edge} is high only when \code{button} is high
+        \emph{now} and its stored previous value is low.
+    \end{itemize}
+\end{parts}
+
+\modulefigure{led_toggle_single}
+
+\selfcheck name your entity \code{led_toggle_single}, with ports \code{clock}, \code{reset},
+\code{button} (in) and \code{led} (out), declared in that order; its testbench is in
+\file{exercises/led_toggle_single}. Note \code{reset} is \textbf{active-high} here, unlike the
+worked example.

@@ -155,8 +155,7 @@ The course material consists of:
 * Exercises completed after the lectures
 * A self-checking testbench for every worked example and for nearly every VHDL exercise, so nearly
   every exercise can be verified on a laptop; the handful that ship none say so, and say how to
-  check by hand instead. Participants run these; writing them is the follow-on CAN Controller
-  Design course's subject
+  check by hand instead. Participants run these; writing them is not part of the course
 
 ---
 

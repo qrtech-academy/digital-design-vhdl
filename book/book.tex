@@ -1,0 +1,38 @@
+% Digital Design with VHDL - the book.
+%
+% Built with LuaLaTeX; see the Makefile. The design is in vhdlbook.sty, the front matter in
+% front/, each chapter in chapters/NN/, one file per section, following the appendices of the
+% lecture it is typeset from, and the back matter in back/: the short answers to the exercises'
+% pen-and-paper parts, the Quartus workflow from info/, and the two written papers from exam/.
+% The solutions to the VHDL exercises are not printed; the chapters point to them in the
+% repository.
+\documentclass[10pt, twoside, openright]{book}
+\usepackage{vhdlbook}
+
+\begin{document}
+
+\frontmatter
+\input{front/title}
+\tableofcontents
+\input{front/preface}
+
+\mainmatter
+\input{chapters/01/chapter}
+\input{chapters/02/chapter}
+\input{chapters/03/chapter}
+\input{chapters/04/chapter}
+\input{chapters/05/chapter}
+\input{chapters/06/chapter}
+\input{chapters/07/chapter}
+\input{chapters/08/chapter}
+
+\appendix
+\input{back/answers/answers}
+\input{back/quartus}
+\input{back/exam/about}
+\input{back/exam/paper_a}
+\input{back/exam/paper_b}
+\input{back/exam/answers_a}
+\input{back/exam/answers_b}
+
+\end{document}

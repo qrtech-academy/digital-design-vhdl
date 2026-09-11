@@ -1,0 +1,42 @@
+% Section 1.7, from lectures/L01/README.md: the objectives, the questions to test yourself, and the
+% next lecture.
+
+\needspace{10\baselineskip}
+\section{Review}
+\label{c1:sec:review}
+
+\subsection*{What you should be able to do now}
+After this chapter, you should be able to:
+\begin{itemize}
+  \item Derive a sum-of-products equation from a truth table, then build and simulate the network in
+    CircuitVerse.
+  \item Apply De Morgan to move an inversion through a gate, and use it to realize a function in a
+    gate set that does not contain the operator you started with.
+  \item Read and write a combinational VHDL module, an \code{entity} with \code{std_logic} ports and
+    an \code{architecture} driving its output, and say why VHDL separates the two.
+  \item Explain why a concurrent assignment describes a wire rather than a statement that runs once,
+    and why a signal sitting at \code{'U'} or \code{'X'} is a bug rather than a value.
+  \item Run a provided testbench and tell whether your module passed.
+\end{itemize}
+
+\needspace{6\baselineskip}
+\subsection*{Questions to test yourself}
+You should be able to explain:
+\begin{enumerate}
+  \item What is the difference between an \code{entity} and an \code{architecture}, and why does
+    VHDL separate them?
+  \item Why is \code{x <= a or b;} not ``a statement that runs once''? What does it describe
+    instead?
+  \item In the braking assistant, the driver's pedal is ORed in last rather than passing through
+    the fault logic. What breaks if you wire it the other way?
+\end{enumerate}
+
+\needspace{6\baselineskip}
+\subsection*{Looking ahead}
+Chapter~\ref{c2:ch} is about larger networks:
+\begin{itemize}
+  \item Karnaugh maps: finding the \emph{smallest} gate network, not just a correct one.
+  \item \code{std_logic_vector}, \code{process} and \code{case}.
+  \item Submodules, demonstrated on a two-digit hexadecimal display driven by eight switches.
+  \item Self-checking testbenches: verifying your own VHDL without a board.
+\end{itemize}

@@ -1,0 +1,44 @@
+% Chapter 5, typeset from lectures/L05: the README is the opener and the closing review, and each
+% part of Appendix A is a section, in the same order and with the same subsections. Appendix B,
+% the exercises, is the last section.
+
+\chapter{Variables and the Hardware Underneath}
+\label{c5:ch}
+
+{\large\itshape The one construct left, and what the toolchain does with all of it.\par}
+
+\begin{chapterbox}{In this chapter}
+\begin{itemize}
+  \item \code{variable}: process-local storage, updated immediately where a \code{signal}
+    schedules.
+  \item Why the same accumulation gives two different answers depending on which you reach for.
+  \item What an FPGA is physically made of: look-up tables and flip-flops, and nothing that is a
+    gate.
+  \item The critical path and Fmax, and the latch you infer by accident.
+  \item Chapter~\ref{c4:ch}'s double-flop synchronizer extracted as a generic module
+    (Exercise~\ref{c5:ex:4}), and what a generic costs in the hardware Quartus builds.
+  \item \code{parity_gen} on the DE0-CV: the LED toggles whenever exactly one switch changes.
+\end{itemize}
+\end{chapterbox}
+
+The course builds this chapter live, in this order. First \code{parity_gen} with a \code{signal}
+accumulator, written the way a programmer would write it, then traced by hand, one loop iteration
+at a time, to the wrong answer. Then \code{parity_gen} with a \code{variable}: the same loop, traced
+the same way, to the right one. Then what Quartus made of it: what it actually built, how fast it
+says the design will run, and an inferred-latch warning produced on purpose. And finally onto the
+board, \code{parity_gen} on the DE0-CV: eight switches in, one LED out, toggling every time exactly
+one switch changes.
+
+The first step is the point of the chapter. The code looks correct, simulates without complaint,
+and is wrong, and the only way to see why is to trace it rather than read it.
+
+Nothing new is assumed beyond Chapters~\ref{c1:ch} to~\ref{c4:ch}: every construct except
+\code{variable} has already appeared in a design you have written. The exercises that close the
+chapter include two written exercises about what the toolchain does to your VHDL, and a code review
+(Exercise~\ref{c5:ex:7}) of a design that compiles cleanly and is wrong anyway.
+Appendix~\ref{app:quartus} is the toolchain reference behind the chapter's demonstrations; no
+exercise requires you to have Quartus or a board.
+
+\input{chapters/05/variables}
+\input{chapters/05/summary}
+\input{chapters/05/exercises}

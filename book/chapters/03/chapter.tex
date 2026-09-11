@@ -1,0 +1,55 @@
+% Chapter 3, typeset from lectures/L03: the README is the opener and the closing review, and each
+% part of Appendix A is a section, in the same order and with the same subsections. Appendix B,
+% the exercises, is the last section.
+
+\chapter{Sequential Logic}
+\label{c3:ch}
+
+{\large\itshape Storing state: registers, D flip-flops, and clocking.\par}
+
+\begin{chapterbox}{In this chapter}
+\begin{itemize}
+  \item Why combinational logic alone cannot remember anything, and what ``state'' means in a
+    circuit.
+  \item The D latch and the D flip-flop, and why synchronous designs are built from the flip-flop.
+  \item Clocking: period, frequency, and rising versus falling edges.
+  \item The synchronous process template in VHDL, and when a signal assignment actually takes
+    effect.
+  \item Edge detection: turning a level into a one-cycle pulse.
+  \item \code{led_toggle} on a DE0-CV: a button press that toggles an LED and holds it.
+  \item Registers as flip-flops in parallel, in \secref{c3:a5}, and \code{d_flip_flop} on its own,
+    in \secref{c3:a8}.
+\end{itemize}
+\end{chapterbox}
+
+The course this book comes from builds this chapter live, one circuit growing out of the last. It
+starts with a D latch in CircuitVerse, cross-coupled gates that are transparent while enabled, and
+makes a D flip-flop from a pair of them: the same circuit, now changing only on an edge. Then comes
+an edge-detected LED toggle, also in CircuitVerse, with one button: one flip-flop remembers the
+previous button state, a second holds the LED, and a falling edge on the button toggles it. The
+same circuit is then written in VHDL for two buttons at once, the synchronous process template
+twice over, with the single wires of the drawing widened into 2-bit vectors so that one process
+serves both buttons. That widening is the whole difference between the drawing and the module.
+Finally \code{led_toggle} goes through Quartus onto the DE0-CV: press the button, and watch the LED
+hold its new state until the next press. \Secref{c3:a9} writes up that last part.
+
+Two predictions are worth making before each simulation runs:
+\begin{itemize}
+  \item for the latch, what \code{Q} does when \code{enable} goes low while \code{D} is still
+    changing.
+  \item for the flip-flop, what \code{Q} does when \code{D} changes \emph{between} two clock edges.
+\end{itemize}
+Exercises~\ref{c3:ex:1} and~\ref{c3:ex:2} are the latch and the flip-flop, which is where those two
+predictions are worth confirming rather than taking on trust. The module \code{d_flip_flop} is also
+written up on its own, in \secref{c3:a8}, with a reference testbench. It is for reading rather than
+presenting: the course builds the flip-flop as part of the toggle circuit instead, which is the same
+module arriving with something to do.
+
+Read the sections that follow before you start the exercises. This is the first chapter whose
+exercises need a testbench for a clocked design, so \secref{c2:app:c} is worth rereading before you
+start \code{register4} in Exercise~\ref{c3:ex:3}. The board work is shown in
+Appendix~\ref{app:quartus} for anyone who has a DE0-CV; no exercise needs one.
+
+\input{chapters/03/sequential}
+\input{chapters/03/summary}
+\input{chapters/03/exercises}

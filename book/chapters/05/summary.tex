@@ -1,0 +1,49 @@
+% Section 5.5, from lectures/L05/README.md: the objectives, the questions to test yourself, and the
+% next lecture.
+
+\needspace{10\baselineskip}
+\section{Review}
+\label{c5:sec:review}
+
+\subsection*{What you should be able to do now}
+After this chapter, you should be able to:
+\begin{itemize}
+  \item Say what separates a \code{signal} from a \code{variable}, predict the different result each
+    produces from the same code, and choose between them deliberately.
+  \item Explain what an FPGA is physically made of, why two different-looking descriptions of the
+    same circuit produce the same hardware, and why a Karnaugh map buys less here than on discrete
+    logic.
+  \item Explain what limits a design's clock frequency, and why adding registers can make a design
+    faster rather than slower.
+  \item Recognize an inferred latch from its warning, say what caused it and fix it, and say why
+    ``it compiled with no errors'' promises less for an FPGA design than for a C program.
+\end{itemize}
+
+\needspace{6\baselineskip}
+\subsection*{Questions to test yourself}
+You should be able to explain:
+\begin{enumerate}
+  \item A \code{signal} is assigned twice, to different values, in one pass through a
+    \code{process}. What ends up on it, and when does that update actually happen?
+  \item Same question for a \code{variable}.
+  \item Why does accumulating across a loop with a \code{signal} give a different, usually wrong,
+    result?
+  \item Nothing on an FPGA becomes a gate. What does a Boolean function become instead, and why does
+    a four-input function cost the same whether or not you minimized it first?
+  \item What is the critical path, and why can adding flip-flops make a design run faster?
+  \item A combinational \code{case} assigns its output in three branches out of four. What does the
+    synthesis tool build for the fourth, and why is that the only thing it \emph{can} build?
+  \item Why is an inferred latch a warning rather than an error, and why does that make it more
+    dangerous rather than less?
+\end{enumerate}
+
+\needspace{6\baselineskip}
+\subsection*{Looking ahead}
+Chapter~\ref{c6:ch} is about counters and shift registers:
+\begin{itemize}
+  \item The first designs whose state advances on its own, rather than tracking an input the way
+    Chapter~\ref{c3:ch}'s and Chapter~\ref{c4:ch}'s registers do.
+  \item Built from Chapter~\ref{c3:ch}'s clocked-process idiom, with this chapter's scheduling rule
+    doing the real work: a shift register is a chain of signals that all update together, which is
+    exactly why it shifts instead of collapsing.
+\end{itemize}

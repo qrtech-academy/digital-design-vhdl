@@ -1,0 +1,46 @@
+% Section 2.9, from lectures/L02/README.md: the objectives, the questions to test yourself, and the
+% next lecture.
+
+\needspace{10\baselineskip}
+\section{Review}
+\label{c2:sec:review}
+
+\subsection*{What you should be able to do now}
+After this chapter, you should be able to:
+\begin{itemize}
+  \item Derive a minimized equation from a Karnaugh map and turn it into a VHDL architecture.
+  \item Read and write \code{std_logic_vector} ports and signals.
+  \item Write a \code{process} with a correct sensitivity list and a \code{case} covering every input
+    value.
+  \item Build a design out of more than one entity with a positional \code{port map}, and say why
+    instantiating a module twice puts two copies of its gates on the FPGA.
+  \item Verify a module by running its testbench, and read a failed assertion.
+\end{itemize}
+
+\needspace{6\baselineskip}
+\subsection*{Questions to test yourself}
+You should be able to explain:
+\begin{enumerate}
+  \item Given a truth table, can you derive its equation both directly and via a Karnaugh map? What
+    is different about the two results?
+  \item Why can a \code{case} statement not appear directly in an architecture body?
+  \item What does \code{when others} protect you against, given that a selector ``can only'' be
+    \code{0} or \code{1}?
+  \item In \code{display1: entity work.display}, what does \code{display1} name, and what does
+    \code{work.display} name? Could a second instance reuse the same label?
+  \item \code{hex_display}'s architecture contains no logic at all. Where do the gates in the finished
+    design come from?
+  \item You instantiated \code{display} twice rather than writing its \code{case} twice. Does the FPGA
+    end up with one copy of that logic or two? So what did you actually gain?
+  \item This book always writes \code{port map} positionally. What breaks if an entity's ports are
+    declared in a different order from the one its testbench expects, and when would you find out?
+\end{enumerate}
+
+\needspace{6\baselineskip}
+\subsection*{Looking ahead}
+Chapter~\ref{c3:ch} is about sequential logic, circuits that remember:
+\begin{itemize}
+  \item The D latch, and the D flip-flop built from a pair of them.
+  \item Clocking, and when a signal assignment actually takes effect.
+  \item Edge detection: a button press that toggles an LED.
+\end{itemize}

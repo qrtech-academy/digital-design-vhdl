@@ -1,0 +1,49 @@
+% Section 7.6, from lectures/L07/README.md: the objectives, the questions to test yourself, and the
+% next lecture.
+
+\needspace{10\baselineskip}
+\section{Review}
+\label{c7:sec:review}
+
+\subsection*{What you should be able to do now}
+After this chapter, you should be able to:
+\begin{itemize}
+  \item Explain what separates a timer from a plain counter, and why the difference is one
+    comparison.
+  \item Build a timer as a gate network: an equality comparator from one XNOR per bit, and the
+    clear that makes it repeat rather than wrap.
+  \item Implement a timer in VHDL as a reusable module, converting a period in seconds into a
+    \code{TICK_COUNT}, and say why \code{timeout} is a one-cycle pulse rather than a level.
+  \item Compose a design out of pre-built modules rather than rewriting them, and say why a button
+    controlling a timer still has to pass through a synchronizer first.
+\end{itemize}
+
+\needspace{6\baselineskip}
+\subsection*{Questions to test yourself}
+You should be able to explain:
+\begin{enumerate}
+  \item In what sense is a timer ``just a counter with a comparison''?
+  \item Why must the internal counter be cleared back to \code{0} on reaching its target, rather
+    than left to keep counting?
+  \item Why is \code{timeout} a single-cycle pulse rather than a level that stays high?
+  \item In the CircuitVerse version, changing the target count means rewiring the comparator. What
+    replaces that rewiring in the VHDL version, and when is its value fixed?
+  \item Why is it still necessary to run a button through a synchronizer before using its edge to
+    enable a timer, even though the button has nothing to do with counting?
+  \item \code{walking_led} writes almost no logic of its own. Name the three modules it composes
+    and which chapter each came from.
+\end{enumerate}
+
+\needspace{6\baselineskip}
+\subsection*{Looking ahead}
+Chapter~\ref{c8:ch} is about state machines:
+\begin{itemize}
+  \item Finite state machines, the last building block in the book, designed by hand first: state
+    diagram, state table, Karnaugh-derived logic, and a gate network in CircuitVerse, exactly the
+    way this chapter's timer was drawn before it was written.
+  \item Then in VHDL, where an enumerated type and a \code{case} statement replace the state table
+    and the Karnaugh maps entirely.
+  \item A timer is itself a state machine with two states and a single purpose.
+    Chapter~\ref{c8:ch} generalizes that to circuits with many states and many transitions between
+    them.
+\end{itemize}

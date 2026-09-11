@@ -1,0 +1,493 @@
+% vhdlbook.sty - the design of "Digital Design with VHDL" as a book.
+%
+% Every visual decision lives here, so the chapters describe content and nothing else. The design
+% is the one the Modern Embedded C++ and Embedded Assembly books use: the same page, type and inks,
+% with the code blocks turned around to suit a VHDL text, and the figures taken from diagrams/ as
+% vector drawings, the way the assembly book takes them.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{vhdlbook}[2026/09/11 Digital Design with VHDL book design]
+
+% ------------------------------------------------------------------------------------------
+% Page. 7.5 x 9.25 in, a common trim for programming texts; the text block is wide enough for an
+% 84-column line of code at the listing size.
+% ------------------------------------------------------------------------------------------
+\RequirePackage[
+  paperwidth=7.5in, paperheight=9.25in,
+  inner=0.85in, outer=1.15in, top=0.95in, bottom=1.0in,
+  headheight=14pt, headsep=18pt, footskip=30pt]{geometry}
+
+% ------------------------------------------------------------------------------------------
+% Type. Palatino for the text, and DejaVu Sans Mono for code: a signal name reads the same in a
+% sentence as in a listing, and as in a figure, which diagrams/style.py draws in the same face.
+% ------------------------------------------------------------------------------------------
+\RequirePackage{fontspec}
+\RequirePackage{unicode-math}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]
+% A space inside inline code may stretch a little, as a word space does; listings set their own
+% fixed columns and are not affected.
+\setmonofont{DejaVu Sans Mono}[Scale=0.84, HyphenChar=None, WordSpace={1,0.4,0.15}]
+\setmathfont{TeX Gyre Pagella Math}
+\RequirePackage[protrusion=true, expansion=true, tracking=true]{microtype}
+\SetTracking{encoding=*, shape=sc}{40}
+
+% ------------------------------------------------------------------------------------------
+% Colour. The accents are the figures' own inks, ACCENT_COLOR and ACCENT_COLOR_2 in
+% diagrams/style.py, so a Karnaugh group is the same red on the page as in the drawing.
+% ------------------------------------------------------------------------------------------
+\RequirePackage[table]{xcolor}
+\definecolor{accent}{HTML}{C00000}
+\definecolor{accent2}{HTML}{0050B3}
+\definecolor{accent3}{HTML}{2E7D32}
+\definecolor{muted}{HTML}{767676}
+\definecolor{ink}{HTML}{3A3A3A}
+\definecolor{fillaccent}{HTML}{F4D7D7}
+\definecolor{fillaccent2}{HTML}{D6E4F5}
+\definecolor{fillaccent3}{HTML}{D9EDDA}
+\definecolor{fillmuted}{HTML}{E8E8E8}
+\definecolor{codebg}{HTML}{F6F5F2}
+\definecolor{rule}{HTML}{BBBBBB}
+
+% ------------------------------------------------------------------------------------------
+% Structure: chapter openers, section heads, running heads.
+% ------------------------------------------------------------------------------------------
+\RequirePackage{titlesec}
+\RequirePackage{titletoc}
+
+\titleformat{\chapter}[display]
+  {\normalfont\raggedright}
+  {\color{accent}\large\scshape\lsstyle\MakeLowercase{\chaptertitlename}\enspace\thechapter}
+  {1.2ex}
+  {\fontsize{26}{30}\selectfont\bfseries}
+  [\vspace{1.4ex}{\color{rule}\titlerule[0.6pt]}]
+\titleformat{name=\chapter, numberless}[display]
+  {\normalfont\raggedright}
+  {}
+  {0pt}
+  {\fontsize{26}{30}\selectfont\bfseries}
+  [\vspace{1.4ex}{\color{rule}\titlerule[0.6pt]}]
+\titlespacing*{\chapter}{0pt}{0.35in}{0.3in}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\raggedright}
+  {\color{accent}\thesection}{0.7em}{}
+\titlespacing*{\section}{0pt}{3.2ex plus 1ex minus .2ex}{1.4ex plus .2ex}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\raggedright}
+  {\color{accent}\thesubsection}{0.7em}{}
+\titlespacing*{\subsection}{0pt}{2.6ex plus 1ex minus .2ex}{1.0ex plus .2ex}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\itshape\raggedright}
+  {}{0em}{}
+\titlespacing*{\subsubsection}{0pt}{2ex plus .8ex minus .2ex}{0.6ex plus .2ex}
+
+\titleformat{\paragraph}[runin]
+  {\normalfont\normalsize\bfseries}
+  {}{0em}{}[.]
+\titlespacing*{\paragraph}{0pt}{1.4ex plus .5ex minus .2ex}{0.6em}
+
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{1}
+
+% Contents: chapters bold with their number in the accent, sections indented beneath, and every
+% page number right-aligned in a box of its own, so a three-digit one never meets the leaders.
+\titlecontents{chapter}[0pt]
+  {\addvspace{1.4ex}\bfseries}
+  {\makebox[2em][l]{\color{accent}\thecontentslabel}}
+  {}
+  {\hfill\makebox[2.2em][r]{\contentspage}}
+\titlecontents{section}[2em]
+  {\addvspace{0.2ex}}
+  {\makebox[2.6em][l]{\thecontentslabel}}
+  {}
+  {\titlerule*[0.6pc]{.}\makebox[2.2em][r]{\contentspage}}
+
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\enspace #1}}
+\fancyhead[LE]{\small\thepage\qquad\scshape\lsstyle\MakeLowercase{\leftmark}}
+\fancyhead[RO]{\small\scshape\lsstyle\MakeLowercase{\rightmark}\qquad\thepage}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\thepage}}
+\RequirePackage{emptypage}
+
+% ------------------------------------------------------------------------------------------
+% Text.
+% ------------------------------------------------------------------------------------------
+% Pages end where their text ends. The class default stretches every gap on a page to square
+% the bottom off, which a page with a long listing or a figure pushed to the next one cannot
+% survive.
+\raggedbottom
+% With a ragged bottom there is no reason to leave one line of a paragraph alone on a page.
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
+% Inline code is set in a monospaced face whose spaces cannot stretch, and a signal name such as
+% button_edge_s2 cannot be hyphenated; a little emergency stretch lets the paragraph builder
+% loosen a line around one rather than push it into the margin.
+\setlength{\emergencystretch}{2.5em}
+\tolerance=1000
+\setlength{\parindent}{1.2em}
+\linespread{1.06}
+\RequirePackage[shortlabels]{enumitem}
+\setlist{itemsep=0.25ex, topsep=0.8ex, parsep=0pt}
+\setlist[itemize]{leftmargin=1.4em, label={\color{accent}\textbullet}}
+\setlist[itemize,2]{leftmargin=1.2em, label={\color{muted}\textendash}}
+\setlist[itemize,3]{leftmargin=1.2em, label={\color{muted}\textperiodcentered}}
+\setlist[enumerate]{leftmargin=1.6em, label={\bfseries\arabic*.}}
+
+% Inline code. \detokenize is what lets a name like button_edge_s2 or an expression like
+% x <= a or b; be written as it appears in the source, without escaping; vhdlbook.lua undoes the
+% two things \detokenize does to it (a doubled # and a space after a backslash-word). A literal %
+% or an unbalanced brace is written \%, \{ or \}. \file is for file names, which are long and
+% need to break at a slash. Robust, so it survives the trip through the contents and the running
+% heads.
+\directlua{dofile(kpse.find_file("vhdlbook.lua"))}
+\DeclareRobustCommand{\code}[1]{%
+  {\ttfamily\directlua{vhdlbook_code("\luaescapestring{\detokenize{#1}}")}}}
+% A running head is set in small capitals by lowercasing it; code in a heading keeps its case,
+% because STATE_OFF and state_off are the same name to VHDL and should still look like the source.
+\ExplSyntaxOn
+\tl_put_right:Nn \l_text_case_exclude_arg_tl { \code }
+\ExplSyntaxOff
+\RequirePackage{xurl}
+\urlstyle{tt}
+% xurl lets a URL break anywhere, which a long link needs; a file name breaks only at a slash or
+% a dot, so no name is ever split in half.
+\DeclareUrlCommand{\file}{\urlstyle{tt}\def\UrlBreaks{\do\/\do\.}\def\UrlBigBreaks{}}
+
+% Section references in the terse form the lectures use: (Appendix A.4) becomes (§1.4).
+\newcommand{\secref}[1]{\S\ref{#1}}
+\newcommand{\Secref}[1]{\S\ref{#1}}
+
+% A lead-in for the notes the lectures are full of: "Note:", "Tip:", "Looking ahead:".
+\newcommand{\note}[1][Note]{\textbf{#1:}\ }
+
+% Boolean algebra as the lectures write it: a name in italics, a prime for NOT. \bool{...} is for
+% a signal name inside a displayed equation, where it may contain an underscore.
+\newcommand{\bool}[1]{\mathit{#1}}
+
+% ------------------------------------------------------------------------------------------
+% Tables. Rules only where they separate; never a vertical one.
+% ------------------------------------------------------------------------------------------
+\RequirePackage{booktabs}
+\RequirePackage{tabularx}
+\RequirePackage{array}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}p}
+\setlength{\aboverulesep}{0.5ex}
+\setlength{\belowrulesep}{0.5ex}
+\newcommand{\thead}[1]{\textbf{#1}}
+% A table set in the flow of the text, full measure, one size down.
+\newenvironment{booktable}[1]
+  {\par\smallskip\noindent\small\tabularx{\linewidth}{#1}\toprule}
+  {\bottomrule\endtabularx\par\smallskip}
+% The same, at its natural width and centred, for tables of short cells: every truth table.
+\newenvironment{narrowtable}[1]
+  {\par\smallskip\begin{center}\small\begin{tabular}{#1}\toprule}
+  {\bottomrule\end{tabular}\end{center}\par\smallskip}
+
+% ------------------------------------------------------------------------------------------
+% Figures. The drawings diagrams/ makes are rendered as vector PDFs into build/figures by
+% figures.py, and set at one scale, so a label is the same size in all of them, exactly as
+% diagrams/style.py intends: 15pt in the drawing, a little under the text size on the page. A
+% figure too wide for that scale is fitted to the page instead and allowed a little of each
+% margin. The CircuitVerse exports are screenshots, not drawings, and are included from the
+% lecture trees as they are, at a width given where each is placed.
+% ------------------------------------------------------------------------------------------
+\RequirePackage{graphicx}
+\graphicspath{{build/figures/}{../}}
+\RequirePackage[export]{adjustbox}
+\RequirePackage{float}
+\RequirePackage{caption}
+\captionsetup{font=small, labelfont={bf,color=accent}, labelsep=quad,
+  justification=centering, skip=6pt}
+\newcommand{\figscale}{0.64}
+\newlength{\figmax}
+\setlength{\figmax}{\dimexpr\textwidth+0.6in\relax}
+\newcommand{\drawing}[1]{%
+  \makebox[\textwidth][c]{\adjustbox{scale=\figscale, max width=\figmax,
+    max height=0.72\textheight}{\includegraphics{#1}}}}
+% \bookfigure[placement]{name}{caption}{label}: a figure drawn by diagrams/, by its name there.
+% The default placement pins the figure where it is written; a figure too tall to fit below its
+% introduction can be let float to the next page instead.
+\newcommand{\bookfigure}[4][H]{%
+  \begin{figure}[#1]
+    \centering
+    \drawing{#2}
+    \caption{#3}\label{#4}
+  \end{figure}}
+% \bookimage[placement]{width}{path}{caption}{label}: a CircuitVerse export, by its path from the
+% repository root, at a fraction of the text width.
+\newcommand{\bookimage}[5][H]{%
+  \begin{figure}[#1]
+    \centering
+    \includegraphics[width=#2\textwidth]{#3}
+    \caption{#4}\label{#5}
+  \end{figure}}
+% \modulefigure{name}: the entity box of an exercise module, which the exercise shows above its
+% self-check. It carries its own name as its title, so it needs no caption.
+\newcommand{\modulefigure}[1]{%
+  \par\addvspace{1.2ex}\needspace{8\baselineskip}\noindent\drawing{#1}\par\addvspace{1.2ex}}
+
+% ------------------------------------------------------------------------------------------
+% Code. A tinted block with a coloured edge; the edge says which language it is. Red for VHDL,
+% blue for the shell, grey for what a tool printed back or anything that is plain text.
+% ------------------------------------------------------------------------------------------
+\RequirePackage{listings}
+\RequirePackage[most]{tcolorbox}
+
+% listings knows VHDL's reserved words. Add the names the course uses from ieee.std_logic_1164
+% and ieee.numeric_std, the standard types, and the two edge functions, as a second class: they
+% are not keywords, but a reader looks for them the way one looks for a keyword.
+\lstdefinelanguage{vhdl93}[]{VHDL}{
+  morekeywords=[2]{std_logic, std_logic_vector, std_ulogic, unsigned, signed, natural, integer,
+    positive, boolean, bit, time, rising_edge, falling_edge, to_unsigned, to_integer,
+    std_logic_1164, numeric_std, ieee},
+}
+
+\lstdefinestyle{base}{
+  basicstyle=\ttfamily\small,
+  columns=fixed,
+  keepspaces=true,
+  showstringspaces=false,
+  upquote=true,
+  tabsize=4,
+  breaklines=true,
+  breakatwhitespace=false,
+  % A wrapped line is marked at both ends. Boxed, because LuaTeX will not take colour or maths
+  % loose inside the discretionary a line break is made of.
+  prebreak={\mbox{\textcolor{muted}{\tiny$\hookleftarrow$}}},
+  postbreak={\mbox{\textcolor{muted}{\tiny$\hookrightarrow$}\space}},
+  aboveskip=0pt, belowskip=0pt,
+  commentstyle=\color{muted},
+  stringstyle=\color{accent2},
+}
+\lstdefinestyle{vhdl}{style=base, language=vhdl93,
+  keywordstyle=\color{accent2!85!black}\bfseries,
+  keywordstyle=[2]\color{accent!80!black}}
+\lstdefinestyle{shell}{style=base, language=bash,
+  keywordstyle={}, morekeywords={}, deletekeywords={test}}
+\lstdefinestyle{output}{style=base, language={}}
+
+\tcbset{
+  codeblock/.style={
+    enhanced, listing only, breakable,
+    colback=codebg, colframe=codebg, boxrule=0pt, arc=0pt, outer arc=0pt,
+    left=8pt, right=6pt, top=4pt, bottom=4pt,
+    before skip=1.2ex plus 2pt, after skip=1.4ex plus 2pt,
+    borderline west={2pt}{0pt}{#1}},
+}
+\newtcblisting{vhdlcode}{codeblock=accent!70, listing options={style=vhdl}}
+\newtcblisting{shell}{codeblock=accent2!70, listing options={style=shell}}
+\newtcblisting{console}{codeblock=muted!60, listing options={style=output}}
+
+% A drawing made of text: the block diagrams the lectures draw with box-drawing characters, and any
+% other plain-text block with a character outside ASCII in it, such as an aligned derivation using
+% a middle dot. listings cannot set those, it reorders and drops them, so this is verbatim text in
+% the box a console listing uses, which keeps every column where the lecture puts it. The one
+% glyph such a drawing uses that the code face lacks, a vertical ellipsis, is set from the maths
+% font at the width of a code character.
+\RequirePackage{fancyvrb}
+\RequirePackage{newunicodechar}
+\newunicodechar{⋮}{\makebox[\fontcharwd\font`M]{$\vdots$}}
+\newtcolorbox{textdrawingbox}{codeblock=muted!60}
+\newenvironment{textdrawing}
+  {\VerbatimEnvironment\begin{textdrawingbox}\begin{Verbatim}[fontsize=\small]}
+  {\end{Verbatim}\end{textdrawingbox}}
+
+% A source file typeset straight from the repository, so the book and the code cannot drift
+% apart. The argument is the path from the repository root, which is also what is printed.
+\newtcbinputlisting{\vhdlfile}[1]{codeblock=accent!70, listing options={style=vhdl},
+  listing file={../#1},
+  title={\detokenize{#1}}, detach title,
+  before upper={\noindent{\scriptsize\ttfamily\color{muted}\tcbtitletext}\par\vspace{3pt}}}
+
+% ------------------------------------------------------------------------------------------
+% Boxes in the text.
+% ------------------------------------------------------------------------------------------
+% An aside: something true that the surrounding text is not about.
+\newtcolorbox{aside}[1][]{
+  enhanced, breakable,
+  colback=fillaccent2!45, colframe=fillaccent2!45, boxrule=0pt, arc=0pt,
+  left=10pt, right=10pt, top=6pt, bottom=6pt,
+  borderline west={2.5pt}{0pt}{accent2},
+  before skip=2ex, after skip=2ex,
+  fontupper=\small,
+  #1}
+% The box that opens a chapter, listing what is in it.
+\newtcolorbox{chapterbox}[1]{
+  enhanced, breakable,
+  colback=white, colframe=rule, boxrule=0.5pt, arc=0pt,
+  left=10pt, right=10pt, top=8pt, bottom=6pt,
+  fonttitle=\small\scshape\lsstyle, coltitle=accent, colbacktitle=white,
+  attach boxed title to top left={xshift=8pt, yshift=-2.2mm},
+  boxed title style={boxrule=0pt, arc=0pt, left=3pt, right=3pt, top=0pt, bottom=0pt},
+  title={#1},
+  before skip=2ex, after skip=2.5ex,
+  fontupper=\small}
+
+% ------------------------------------------------------------------------------------------
+% Every heading from here on ends with \@afterheading, so the paragraph after it starts flush
+% left, as it does after a \section.
+%
+% Exercises. The lectures number their exercises within the lecture and group them under
+% headings; a group is an exercise set here, and each exercise is numbered within the chapter, so
+% that exercise 3 of L04 is Exercise 4.3 and can never be mistaken for §4.3. Each carries the
+% kinds of work it asks for, one tag each, in the order they come up:
+%   Paper         worked by hand: a truth table, a derivation, a trace, a written answer.
+%   CircuitVerse  a circuit built and simulated by hand in the browser.
+%   VHDL          a module written, and checked with the testbench the exercise ships.
+% ------------------------------------------------------------------------------------------
+\RequirePackage{needspace}
+\newcounter{exercise}[chapter]
+\renewcommand{\theexercise}{\thechapter.\arabic{exercise}}
+\newcounter{exerciseset}[chapter]
+\newcommand{\kindtag}[2][fillmuted]{%
+  \tcbox[on line, colback=#1, colframe=#1, boxrule=0pt, arc=1.5pt,
+    left=3pt, right=3pt, top=1pt, bottom=1pt, boxsep=0pt]{%
+    \small\scshape\lsstyle\MakeLowercase{#2}}}
+% The fill each kind is tagged in; anything else is grey.
+\ExplSyntaxOn
+\cs_new_protected:Npn \vhdlbook_kind:n #1
+  {
+    \str_case:nnF {#1}
+      {
+        {Paper} { \kindtag[fillaccent2]{#1} }
+        {CircuitVerse} { \kindtag[fillaccent3]{#1} }
+        {VHDL} { \kindtag[fillaccent]{#1} }
+      }
+      { \kindtag{#1} }
+  }
+% \kinds{Paper, VHDL}: one tag per kind, a thin space apart.
+\NewDocumentCommand \kinds { m }
+  { \clist_map_inline:nn {#1} { \vhdlbook_kind:n {##1} } { \, } }
+\ExplSyntaxOff
+% \@taggedheading{heading}{tag}: a heading with a tag at the right margin, set the way \worth sets
+% a part's marks. A heading that is long runs on ragged, never stretched; the tag stays on its
+% last line if it fits there, and otherwise goes flush right on a line of its own.
+\newcommand{\@taggedheading}[2]{%
+  \begingroup\rightskip=0pt plus 1fil\parfillskip=0pt\relax
+  \noindent#1\nobreak\hskip0pt plus 1fil\penalty50\hskip1.2em\hbox{}\nobreak
+  \hskip0pt plus 1fill#2\par\endgroup}
+% \exerciseset{Title}: the heading a group of exercises sits under.
+\newcommand{\exerciseset}[1]{%
+  \par\addvspace{4ex plus 1ex}\needspace{8\baselineskip}%
+  \refstepcounter{exerciseset}%
+  \noindent{\small\scshape\lsstyle\color{accent}exercise set \theexerciseset}\par
+  \nopagebreak\vspace{0.3ex}%
+  \noindent{\Large\bfseries #1}\par
+  \nopagebreak\vspace{0.4ex}{\color{rule}\hrule height 0.4pt}\par\nopagebreak\vspace{0.6ex}%
+  \@afterindentfalse\@afterheading}
+% \exercise{Title}{Paper, CircuitVerse, VHDL}
+\newcommand{\exercise}[2]{%
+  \par\addvspace{3ex plus 1ex}\needspace{8\baselineskip}%
+  \refstepcounter{exercise}%
+  \@taggedheading{{\large\bfseries{\color{accent}Exercise~\theexercise}\quad #1}}{\kinds{#2}}%
+  \nopagebreak\vspace{0.8ex}\@afterindentfalse\@afterheading}
+% The lettered parts of an exercise, a) to e), as the lectures letter them.
+\newenvironment{parts}
+  {\begin{enumerate}[label={\bfseries\alph*)}, leftmargin=1.8em, itemsep=0.8ex]}
+  {\end{enumerate}}
+% A part of an exercise with a heading of its own, for the parts the lectures give a title:
+% "The line format", "What to build: the receiver".
+\newcommand{\task}[1]{\par\addvspace{1.6ex}\needspace{4\baselineskip}%
+  \noindent{\bfseries #1}\par\nopagebreak\vspace{0.3ex}\@afterindentfalse\@afterheading}
+% The paragraph every VHDL exercise ends on: the entity name, the port order, and where the
+% testbench is.
+\newcommand{\selfcheck}{\par\addvspace{1ex}\noindent\textbf{Self-check:}\ }
+
+% ------------------------------------------------------------------------------------------
+% Short answers. The appendix that answers the exercises' pen-and-paper parts: an entry per
+% exercise, headed by its number and title and linked back to it, and each part's answer after
+% its letter. \answer{c2:ex:1}{Title} opens an entry; \pt{a} opens a part.
+% ------------------------------------------------------------------------------------------
+\newcommand{\answer}[2]{\par\addvspace{2ex plus .5ex}\needspace{4\baselineskip}%
+  \@taggedheading{{\bfseries\color{accent}Exercise~\ref{#1}}\quad{\bfseries #2}}%
+    {{\small\color{muted}page~\pageref{#1}}}%
+  \nopagebreak\vspace{0.4ex}\@afterindentfalse\@afterheading}
+\newcommand{\pt}[1]{\par\addvspace{0.5ex}\noindent\hangindent=1.6em\hangafter=1%
+  \makebox[1.6em][l]{\bfseries #1)}\ignorespaces}
+% \ptnote{Looking ahead}: an answer to a question the exercise asks outside its lettered parts.
+\newcommand{\ptnote}[1]{\par\addvspace{0.5ex}\noindent\hangindent=1.6em\hangafter=1%
+  \textit{#1:}\ \ignorespaces}
+% \truthrow{abc}{000,001,...}{x}{0,1,...}: a truth table on its side, inputs across the top and the
+% output beneath, which is how a table of eight or sixteen rows fits on an answer's line.
+\ExplSyntaxOn
+\NewDocumentCommand \truthrow { m m m m }
+  {
+    \begin{tabular}[t]{@{}l@{\quad}*{\clist_count:n {#2}}{c}@{}}
+      \code{#1} \clist_map_inline:nn {#2} { & ##1 } \\
+      \midrule
+      \code{#3} \clist_map_inline:nn {#4} { & ##1 } \\
+    \end{tabular}
+  }
+\ExplSyntaxOff
+% A chapter's heading inside the short answers: which chapter the entries below come from.
+\newcommand{\answerchapter}[1]{%
+  \par\addvspace{4ex plus 1ex}\needspace{8\baselineskip}%
+  \noindent{\small\scshape\lsstyle\color{accent}chapter~\ref{#1}}\par\nopagebreak\vspace{0.2ex}%
+  \noindent{\Large\bfseries\nameref{#1}}\par
+  \nopagebreak\vspace{0.4ex}{\color{rule}\hrule height 0.4pt}\par\nopagebreak\vspace{0.6ex}%
+  \@afterindentfalse\@afterheading}
+
+% ------------------------------------------------------------------------------------------
+% The written papers. A question is numbered within its paper and carries its marks in the tag
+% an exercise carries its kind in; a part's marks are set flush right at the end of the part, the
+% way a printed paper sets them.
+% ------------------------------------------------------------------------------------------
+\newcounter{question}[chapter]
+% \question{Title}{Marks}
+\newcommand{\question}[2]{%
+  \par\addvspace{3.5ex plus 1ex}\needspace{6\baselineskip}%
+  \refstepcounter{question}%
+  \@taggedheading{{\large\bfseries{\color{accent}Question~\thequestion}\quad #1}}%
+    {\kindtag{#2 marks}}%
+  \nopagebreak\vspace{0.8ex}\@afterindentfalse\@afterheading}
+% "mark" or "marks" after a number, which may be a half: 1 mark, 1.5 marks, 2 marks.
+\ExplSyntaxOn
+\cs_new:Npn \marksword #1 { \str_if_eq:nnTF {#1} {1} {mark} {marks} }
+\ExplSyntaxOff
+% \worth{N}: "(N marks)" at the right margin, on the part's last line if it fits.
+\newcommand{\worth}[1]{{\unskip\nobreak\hfil\penalty50\hskip1.5em\hbox{}\nobreak\hfill
+  \mbox{\small\itshape (#1~\marksword{#1})}\parfillskip=0pt\finalhyphendemerits=0\par}}
+% \qpart{a}: the lead-in of a lettered part of a question.
+\newcommand{\qpart}[1]{\par\addvspace{1.2ex}\noindent\textbf{(#1)}\enspace}
+% \credit{text}: a credit that is more than a number of marks ("2 marks; deduct 1 for ..."),
+% set flush right like \worth.
+\newcommand{\credit}[1]{{\unskip\nobreak\hfil\penalty50\hskip1.5em\hbox{}\nobreak\hfill
+  \mbox{\small\itshape (#1)}\parfillskip=0pt\finalhyphendemerits=0\par}}
+% \answersection{N}{Title}{Marks}: the heading of the answers to one question, set like the
+% paper's own \question one size up and numbered by the question it answers rather than by a
+% section counter; it is in the contents and the running head, and linkable as
+% \answerprefix:q:N, where each set of answers sets \answerprefix to its own.
+\newcommand{\answerprefix}{ans}
+\newcommand{\answersection}[3]{%
+  \par\addvspace{4.5ex plus 1ex}\needspace{8\baselineskip}%
+  \phantomsection\addcontentsline{toc}{section}{Question~#1: #2}%
+  \markright{Question~#1\enspace #2}%
+  \def\@currentlabel{#1}\label{\answerprefix:q:#1}%
+  \@taggedheading{{\Large\bfseries{\color{accent}Question~#1}\quad #2}}{\kindtag{#3 marks}}%
+  \nopagebreak\vspace{1.2ex}\@afterindentfalse\@afterheading}
+% \answerpart{a}{4}: the heading of the answer to one part, with what it is worth.
+\newcommand{\answerpart}[2]{%
+  \par\addvspace{2.2ex plus .6ex}\needspace{4\baselineskip}%
+  \noindent{\bfseries\color{accent}(#1)}\hfill\kindtag{#2~\marksword{#2}}%
+  \par\nopagebreak\vspace{0.5ex}\@afterindentfalse\@afterheading}
+
+% ------------------------------------------------------------------------------------------
+% Links. Coloured on screen, quiet enough to print.
+% ------------------------------------------------------------------------------------------
+\RequirePackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=accent2!80!black, urlcolor=accent2!80!black,
+  citecolor=accent2!80!black, pdfauthor={Erik Pihl},
+  pdftitle={Digital Design with VHDL},
+  pdfsubject={Licensed under CC BY-NC-SA 4.0; its code may also be used under the MIT License}}
+\RequirePackage{bookmark}
+\pdfstringdefDisableCommands{\def\code#1{\detokenize{#1}}\def\S{§}}
+
+\endinput

@@ -1,0 +1,223 @@
+% Preface: the README's introduction, About the Course, During the Course, Learning Outcomes,
+% Written Examinations and Building sections, and the prerequisites, course plan and software from
+% info/README.md, as the front matter of a book.
+
+\chapter{Preface}
+\markboth{Preface}{Preface}
+
+This book is for software and embedded engineers who know classical digital design and want to
+write VHDL. It takes you from a gate network on paper to a design running on a real FPGA (a
+\emph{field-programmable gate array}: a chip full of logic you configure into the circuit you want,
+rather than one whose function was fixed when it was manufactured).
+
+\textbf{The subject is VHDL.} Gates, truth tables, Boolean algebra and Karnaugh maps are refreshed
+rather than taught: they appear where the language needs them, and in Chapter~\ref{c8:ch} where the
+state machine is designed by hand before it is written.
+
+The book covers writing synthesizable VHDL for combinational and sequential hardware:
+metastability and synchronization, counters, timers and finite state machines, each reasoned about
+as a circuit first and then expressed in the language, running on a real FPGA. Topics include:
+\begin{itemize}
+  \item Combinational logic: gates, truth tables, Boolean algebra, and VHDL from the first chapter.
+  \item Larger networks: Karnaugh maps, multiplexers, \code{process} and \code{case}.
+  \item Sequential logic: registers, D flip-flops, clocking, and edge detection.
+  \item Metastability and synchronization: asynchronous inputs, synchronizers, debouncing.
+  \item The VHDL language: signals, variables, subcomponents, and generics.
+  \item Counters, shift registers, and timers.
+  \item Finite state machines: designed by hand, then written in VHDL, Moore and Mealy.
+\end{itemize}
+
+\textbf{Wherever a circuit can usefully be drawn, it is drawn first}: reasoned about as gates, then
+built and simulated by hand in CircuitVerse (\url{https://circuitverse.org/simulator}) before it is
+ever written in VHDL. Every chapter that introduces a new kind of circuit draws one that way first.
+The exception is Chapter~\ref{c5:ch}, which is about the language and has no new circuit in it; and
+once a kind of circuit has been drawn, later designs of the same kind go straight into VHDL.
+
+Verification works in three layers:
+\begin{itemize}
+  \item \textbf{By hand, in CircuitVerse}, before any VHDL exists. You derive what the circuit
+    should do, build it, and then simulate it yourself against that prediction, exhaustively,
+    since the circuits are small enough for that to be cheap. Nothing automated checks this step,
+    deliberately: predicting a behaviour and then confirming it is the skill the rest of the book is
+    built on.
+  \item \textbf{In the exercises}, you write the VHDL and check it with a provided self-checking
+    testbench (\file{<module>_tb.vhd}, runnable with GHDL). Nearly every VHDL exercise ships one,
+    so nearly every exercise can be completed and verified on a laptop; the handful that do not say
+    so, and say how to check by hand instead.
+  \item \textbf{On the board}: the designs are synthesized in Quartus Prime Lite and run on a real
+    Terasic DE0-CV board. In the course the book comes from, that is demonstrated from the front,
+    and nobody needs a board of their own; Appendix~\ref{app:quartus} is the workflow, for a reader
+    who has one.
+\end{itemize}
+
+\textbf{Writing} testbenches is not a topic here: this book only shows you how to run the ones
+provided.
+
+\textbf{Along the way you will build circuits, not just read about them.} You will:
+\begin{itemize}
+  \item Realize a logic function by hand as a gate network, and simulate it in CircuitVerse.
+  \item Translate that same gate network into synthesizable VHDL.
+  \item Build sequential circuits from D flip-flops: registers, counters, shift registers, and
+    timers.
+  \item Guard every asynchronous input with a double-flop synchronizer before it reaches synchronous
+    logic.
+  \item Design a Moore state machine by hand (diagram, table, Karnaugh maps, gate network), then
+    write the same kind of machine in VHDL, and learn to recognize a Mealy machine and what it
+    costs.
+  \item Follow each design through Quartus Prime Lite and onto a Terasic DE0-CV FPGA board.
+  \item Verify your own VHDL after each chapter by running the provided self-checking testbenches.
+\end{itemize}
+The examples and exercises are small, complete circuits, such as:
+\begin{itemize}
+  \item A gate network realizing a Boolean function, in CircuitVerse and in VHDL.
+  \item A synchronized, edge-detected push button driving an LED.
+  \item A free-running timer and a shift-register-driven LED pattern.
+  \item A three-state Moore machine cycling an LED off, blinking, on, composed from a synchronizer
+    and a timer.
+  \item A two-state Mealy sequence detector, contrasted against the Moore machine it would take
+    three states to write.
+\end{itemize}
+The book then closes on two exercises that are not small: a serial receiver and a serial
+transmitter, each composed from modules you wrote in earlier chapters around a state machine you
+design yourself, and each verified by a provided testbench.
+
+\section*{What you should be able to do at the end}
+Having worked through the book, you should be able to:
+\begin{itemize}
+  \item Realize a Boolean function as a gate network, and simulate it by hand in CircuitVerse.
+  \item Read and write combinational and sequential VHDL: entities, architectures, signals,
+    variables, and processes.
+  \item Explain metastability and apply the double-flop synchronizer to any asynchronous input.
+  \item Design and implement counters, shift registers, and timers in VHDL.
+  \item Design a Moore state machine from a specification and implement it in VHDL, and recognize a
+    Mealy machine on sight, knowing what its earlier output costs.
+  \item Compose a design out of previously built modules (a reset synchronizer, a button
+    synchronizer, a timer) rather than rewriting their logic.
+  \item Explain how a VHDL design reaches an FPGA: synthesis, pin assignment, and programming the
+    board in Quartus Prime Lite.
+  \item Verify a VHDL design by running a self-checking testbench under GHDL.
+\end{itemize}
+
+\section*{What you are assumed to know}
+The subject of this book is \textbf{VHDL}, not digital design. You are expected to arrive already
+comfortable with:
+\begin{itemize}
+  \item Logic gates and truth tables, and reading a sum-of-products equation off a table.
+  \item Boolean algebra: the basic identities and De Morgan's laws.
+  \item Karnaugh maps, for functions of three or four variables.
+  \item Registers, D flip-flops, and what a clock edge does.
+  \item State machines as a concept: states, transitions, and the difference between Moore and
+    Mealy.
+\end{itemize}
+None of that is taught from scratch. It is refreshed where the language needs it, briefly:
+Chapter~\ref{c1:ch} restates gate and Boolean notation so the book has one convention,
+Chapter~\ref{c2:ch} works a Karnaugh map end to end because minimization is what motivates the VHDL
+that follows, and Chapter~\ref{c8:ch} designs one state machine by hand before writing it, because
+seeing the state table become a \code{case} statement is the point of the chapter.
+
+What the book does teach from nothing is the language and the toolchain: \code{entity} and
+\code{architecture}, signals and variables, processes, generics, subcomponents, synthesis in
+Quartus, and simulation with GHDL.
+
+No programming language beyond general software fluency is assumed. Familiarity with C or a similar
+language helps, since several explanations contrast VHDL's semantics with it.
+
+\section*{How the book is organised}
+The book is typeset from an eight-lecture course, and each chapter is one lecture. Its sections are
+the parts of the lecture's appendix, in the same order and with the same subsections, so a chapter
+here and a lecture directory in the repository can be read side by side:
+
+\begin{booktable}{@{}p{5.2em}p{3.6em}L@{}}
+  \thead{Chapter} & \thead{Lecture} & \thead{Topic} \\
+  \midrule
+  1 & \file{L01} & Combinational logic and first VHDL \\
+  2 & \file{L02} & Larger networks, multiplexers and submodules \\
+  3 & \file{L03} & Sequential logic \\
+  4 & \file{L04} & Metastability and synchronization \\
+  5 & \file{L05} & Variables and the hardware underneath \\
+  6 & \file{L06} & Counters and shift registers \\
+  7 & \file{L07} & Timers \\
+  8 & \file{L08} & State machines \\
+\end{booktable}
+
+Every chapter opens with what is in it, works through the material, closes with a review of what
+you should now be able to explain, and ends with its exercises. The appendices hold the short
+answers to the exercises, the Quartus workflow, and the two written papers described below.
+
+\section*{What the exercises look like}
+The exercises are grouped into \textbf{sets} by topic, and each is labelled with the kinds of work
+it asks for:
+
+\begin{booktable}{@{}p{7.4em}L@{}}
+  \thead{Kind} & \thead{What it asks of you} \\
+  \midrule
+  \kinds{Paper} & Work it by hand: a truth table, a derivation, a Karnaugh map, a trace through
+    the clock edges, a calculation, or a question answered in a sentence or two. \\
+  \kinds{CircuitVerse} & Build the circuit in CircuitVerse and simulate it, exhaustively, against
+    the behaviour you predicted first. \\
+  \kinds{VHDL} & Write a module, with the entity name and port order the exercise gives, and check
+    it with the testbench it ships. \\
+\end{booktable}
+
+\textbf{The answers to the paper work are in Appendix~\ref{app:answers}}, short, and by exercise
+number, so that an answer worked on paper can be checked on paper. \textbf{The VHDL is checked by
+its testbench}, which is the point of shipping one, and reference solutions are published in the
+companion repository, under \file{lectures/LNN/solutions}. Try each exercise before you read its
+answer.
+
+\section*{Two written papers, and what they are not}
+Nothing in the course this book comes from is marked. Assessment is the exercises after every
+chapter, the self-checking testbench nearly every one of them ships, and the circuit you predict and
+then simulate by hand in CircuitVerse before any VHDL exists.
+
+Appendices~\ref{exam:ch:about} to \ref{ansb:ch:answers} hold two three-hour papers with worked
+solutions, and they check something else: \textbf{your own skills and knowledge, on paper, with
+nothing in front of you.} Eight questions each, one per chapter, mixing theory with VHDL you write
+out by hand and with designs that compile cleanly and are wrong anyway.
+
+\textbf{They exist purely so that you can test yourself after working through the book.} They gate
+nothing, they are not a qualification, and no part of the book requires them.
+
+\textbf{Take one after the last chapter}, and after the serial receiver and transmitter that close
+it. Both papers draw on all eight chapters, so sitting one partway through examines material you
+have not read yet.
+
+\section*{Setting up}
+Everything in this book runs on an ordinary laptop, with no hardware of any kind. You need:
+\begin{itemize}
+  \item \textbf{CircuitVerse}, the free, browser-based logic simulator used to build and simulate
+    every circuit by hand before it is written in VHDL, at
+    \url{https://circuitverse.org/simulator}. Nothing to install.
+  \item \textbf{GHDL}, the free, open-source VHDL analyzer and simulator, used to run the
+    self-checking testbenches that verify the exercises. Running testbenches is covered in
+    \secref{c2:app:c}.
+  \item \textbf{Git} and \textbf{make}, to fetch the companion repository and run its checks.
+\end{itemize}
+On Linux, or on Windows through WSL with Ubuntu:
+
+\begin{shell}
+sudo apt -y update
+sudo apt -y install git make ghdl
+ghdl --version           # 3.x or newer; the repository's CI builds against 4.1.0
+\end{shell}
+
+\noindent Then clone the companion repository:
+
+\begin{shell}
+git clone https://github.com/qrtech-academy/digital-design-vhdl.git
+\end{shell}
+
+\noindent Every lecture directory holds its appendices, its worked examples, each with a reference
+testbench, and an \file{exercises} directory with the testbench for every VHDL exercise, in a
+directory named after the module you write. You write your module beside its testbench and run the
+three GHDL commands \secref{c2:app:c} gives; the testbench prints its ``all checks passed'' note
+when your module is right. At the repository's root:
+
+\begin{shell}
+make help                # List every target.
+make build               # Build and simulate every example; check every exercise testbench.
+make build MODULE=timer  # Build only the examples whose path contains "timer".
+\end{shell}
+
+\noindent Quartus Prime Lite and a DE0-CV board are needed for nothing in the book. If you have
+them, Appendix~\ref{app:quartus} takes a design from VHDL onto the board.

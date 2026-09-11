@@ -1,0 +1,64 @@
+% Short answers to Chapter 2's exercises, lectures/L02/appendix/b_exercises.md.
+
+\answerchapter{c2:ch}
+
+\answer{c2:ex:1}{A three-variable map}
+\ptnote{Equation}\code{X = B'}: one group of four, the rows \code{AB = 00} and \code{AB = 10}, which
+are adjacent through the top/bottom wraparound. The network is a single \code{NOT} on \code{B}.
+
+\answer{c2:ex:2}{A four-variable map}
+\ptnote{Equation}\code{X = B'D + ABD'}. \code{B'D} is the $2\times2$ block at \code{CD = 01, 11} in
+rows \code{AB = 00, 10}, wrapping top to bottom; \code{ABD'} is the pair at \code{CD = 00, 10} in
+row \code{AB = 11}, wrapping left to right.
+
+\answer{c2:ex:3}{A three-output network}
+\pt{a}With \code{AB} down the rows and \code{CD} across the columns:
+\begin{itemize}
+  \item \code{X = A'B + AB'} (\code{A xor B}): the rows \code{AB = 01} and \code{AB = 10}, four
+    cells each.
+  \item \code{Y = D}: the eight cells in the columns \code{CD = 01} and \code{CD = 11}.
+  \item \code{Z = B'D' + CD}: the four corners, wrapping both ways, and the column \code{CD = 11}. A
+    group \code{B'C} is also possible, but every cell of it is already covered.
+\end{itemize}
+
+\answer{c2:ex:4}{The 4-to-1 mux by hand}
+\pt{a}\truthrow{S[1:0]}{00,01,10,11}{X}{A,B,C,D}
+\pt{b}\code{X = AS1'S0' + BS1'S0 + CS1S0' + DS1S0}.
+
+\answer{c2:ex:7}{One 7-segment digit}
+\ptnote{A to F}\code{A} \code{"0001000"}, \code{b} \code{"0000011"}, \code{C} \code{"1000110"},
+\code{d} \code{"0100001"}, \code{E} \code{"0000110"}, \code{F} \code{"0001110"}.
+
+\answer{c2:ex:9}{A digit as gates}
+\ptnote{Segments}With \code{number} as \code{ABCD}, \code{A} the most significant bit, the minimized
+equations for each output bit \code{hex(i)}, which is \code{1} where the segment is off, and for its
+complement, where the segment is lit:\par\smallskip
+{\small
+\begin{tabular}{@{}lll@{}}
+  \toprule
+  \thead{Segment} & \thead{\code{hex(i) = 1}, off} & \thead{Lit} \\
+  \midrule
+  \code{a}, \code{hex(0)} & \code{A'B'C'D + A'BC'D' + AB'CD + ABC'D} &
+    \code{A'C + BC + AD' + B'D' + A'BD + AB'C'} \\
+  \code{b}, \code{hex(1)} & \code{A'BC'D + BCD' + ABD' + ACD} &
+    \code{A'B' + B'D' + A'C'D' + A'CD + AC'D} \\
+  \code{c}, \code{hex(2)} & \code{A'B'CD' + ABD' + ABC} & \code{A'B + AB' + A'C' + A'D + C'D} \\
+  \code{d}, \code{hex(3)} & \code{A'B'C'D + A'BC'D' + BCD + AB'CD'} &
+    \code{A'B'D' + B'CD + BC'D + BCD' + AC'} \\
+  \code{e}, \code{hex(4)} & \code{A'D + B'C'D + A'BC'} & \code{B'D' + CD' + AB + AC} \\
+  \code{f}, \code{hex(5)} & \code{A'B'D + A'B'C + A'CD + ABC'D} &
+    \code{C'D' + BD' + A'BC' + AB' + AC} \\
+  \code{g}, \code{hex(6)} & \code{A'B'C' + A'BCD + ABC'D'} & \code{B'C + CD' + A'BC' + AB' + AD} \\
+  \bottomrule
+\end{tabular}\par}
+\smallskip\noindent Segment \code{a}'s off-set, digits \code{1}, \code{4}, \code{b} and \code{d},
+has no two adjacent cells, so it does not minimize at all. The lit forms of \code{b} and \code{c}
+are not unique: other covers with the same number of terms are as small.
+
+\answer{c2:ex:10}{Naming a sub-expression}
+\ptnote{Same circuit}Both architectures give this \code{x} in every row, so they describe the same
+circuit:\par\smallskip
+\noindent\hspace{1.6em}%
+\truthrow{abcd}{0000,0001,0010,0011,0100,0101,0110,0111}{x}{0,1,0,0,0,1,0,0}\par\smallskip
+\noindent\hspace{1.6em}%
+\truthrow{abcd}{1000,1001,1010,1011,1100,1101,1110,1111}{x}{0,1,0,0,1,1,1,1}\par

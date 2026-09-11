@@ -1,0 +1,37 @@
+% Short answers to Chapter 3's exercises, lectures/L03/appendix/b_exercises.md.
+
+\answerchapter{c3:ch}
+
+\answer{c3:ex:1}{A D latch}
+\pt{b}With \code{enable = 1}, \code{Q} follows \code{D} at once and \code{Qn = D'}: the latch is
+transparent. With \code{enable = 0}, \code{Q} and \code{Qn} hold whatever \code{D} does: both AND
+terms are \code{0}, so each NOR only inverts the other's output, and the loop keeps its value.
+\pt{c}\code{Q} is the value \code{D} had at the instant \code{enable} fell, held until
+\code{enable} rises again. Taking \code{enable} low first wherever both switches change:\par
+\smallskip\noindent\hspace{1.6em}%
+\truthrow{D enable}{00,01,10,11,00,01,10,11}{Q}{--,0,0,1,1,0,0,1}\par\smallskip
+\noindent\hangindent=1.6em\hspace{1.6em}\code{10} holds the \code{0} from \code{01}, and \code{00}
+holds the \code{1} from \code{11}; the first \code{00} shows whatever the latch held before.
+
+\answer{c3:ex:2}{A D flip-flop from two latches}
+\pt{b}With \code{enable = 1}, \code{Q} and \code{Qn} change only at a rising clock edge, to the
+value \code{D} had at that edge; a change of \code{D} in either phase shows at the next rising edge.
+While the clock is low the master is transparent and follows \code{D} and the slave is closed; at
+the rising edge the master closes, freezing \code{D}, and the slave opens and passes that value to
+\code{Q}; while the clock is high the closed master keeps \code{D} away from \code{Q}.
+\pt{c}\code{Q} goes to \code{0} immediately, without waiting for a clock edge, and releasing
+\code{reset_n} changes nothing until the next rising edge. The reset is asynchronous: it acts on
+both latches' NOR gates directly, whatever the clock is doing, where a synchronous signal is only
+acted on at a clock edge.
+
+\answer{c3:ex:3}{A four-bit register}
+\pt{c}Each register flip-flop's next value is its own bit of \code{d}, so the four are independent,
+identical copies and widening the vector is all it takes. A counter's bit \code{i} depends on its
+own value and the carry from every bit below it, so its flip-flops are coupled through an adder;
+four one-bit counters side by side would all toggle together, \code{0000}, \code{1111},
+\code{0000}, rather than count.
+
+\answer{c3:ex:4}{An edge-detected toggle}
+\pt{b}The flip-flop holding the previous sampled value of \code{button}. Once an edge has sampled
+the button high it holds \code{1}, so \code{edge = button · previous'} stays \code{0} for as long as
+the button is held, and \code{led} toggles only once.

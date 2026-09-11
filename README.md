@@ -46,10 +46,8 @@ Verification works in three layers:
 * **In the lecture**, designs are synthesized in Quartus Prime Lite and run on a real Terasic
   DE0-CV board, demonstrated from the front. No participant needs a board of their own.
 
-**Writing** testbenches is not a topic here - it's taught in the follow-on CAN Controller Design
-course. This course only shows you how to run the ones provided. This course ends where
-[CAN Controller Design](https://github.com/qrtech-academy/can-controller-design), a separate
-follow-on course, begins.
+**Writing** testbenches is not a topic here: this course only shows you how to run the ones
+provided.
 
 ---
 
@@ -119,6 +117,13 @@ says more about how far you have read than about what you have understood.
 
 ---
 
+## The Book
+The whole course is also available as a book: 
+[Digital Design with VHDL](./book/digital-design-vhdl.pdf). It adds short answers to every part of the exercises you work on paper. It is built from the sources in [`book/`](./book/README.md), which also say how to build it yourself (`make -C book`) and how a new
+edition is released.
+
+---
+
 ## Structure
 
 ```text
@@ -129,6 +134,7 @@ lectures/    Per lecture: README, appendix/, exercises/, and (in all but L07) a 
              solutions/ appears as each lecture is delivered.
 exam/        Two written papers and their solutions. Optional, and marked by nobody here.
 diagrams/    Python sources for the generated figures, and the exercise entity definitions.
+book/        The course typeset as a book with LuaLaTeX; `make -C book` builds the PDF.
 ```
 
 ---
@@ -170,5 +176,18 @@ ghdl --version           # 3.x or newer; CI builds against 4.1.0
 
 `python3` is optional. With it, exercise testbenches are checked against their entity, and run
 against any published body, as described above; without it, they fall back to a syntax check.
+
+---
+
+## License
+The source code is released under the [MIT License](./LICENSE): the VHDL designs, the testbenches
+and the exercise solutions, the Python sources in `diagrams/` that draw the figures, the build and
+CI scripts, and the book's build files.
+
+The course material is licensed under [CC BY-NC-SA 4.0](./LICENSE-CONTENT): the lectures,
+exercises and exam papers, the other Markdown documents, the figures, and the book typeset from
+them. You may share and adapt it for any non-commercial purpose, with credit, as long as what you
+share carries the same license. The code examples printed in the lectures and in the book may also
+be used under the MIT License.
 
 ---
