@@ -100,8 +100,7 @@ synchronizer can hand you `1111` or `0000`, values the counter never held.
 
 Buses crossing clock domains need a handshake, a FIFO, or Gray coding, which arranges that only one
 bit ever changes at a time. This course never crosses clock domains with a bus, so you will not need
-them here; the follow-on CAN Controller Design course is where they belong. Knowing that the two-flop
-answer stops at one bit is enough for now.
+them here. Knowing that the two-flop answer stops at one bit is enough for now.
 
 ---
 

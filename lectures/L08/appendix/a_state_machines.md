@@ -320,7 +320,7 @@ Mealy reports the match the *same* cycle the second `1` arrives where Moore take
 Mealy needs 2 states where Moore needs 3.
 
 ### Which to reach for
-Moore, almost always, and it is what the rest of this course and the follow-on CAN course use:
+Moore, almost always, and it is what the rest of this course uses:
 * its output depends on no primary input, so it cannot follow a noisy one.
 * a Mealy output can in principle glitch combinationally if its inputs aren't already clean.
 * note that "Moore" on its own does not mean glitch-free. An output decoded combinationally from

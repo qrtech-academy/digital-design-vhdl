@@ -5,7 +5,7 @@
 * Hand-designing a Moore machine: state diagram, state table, Karnaugh-derived logic.
 * State encoding as a design decision, and why the worked machine uses a Gray code.
 * The same machine in VHDL: an enumerated type and the `case` transition pattern.
-* Why Moore is the default here and in the follow-on CAN course.
+* Why Moore is the default here.
 * `fsm_led` demonstrated on the DE0-CV: buttons cycling the LED off, blinking, on.
 * Self-study: Mealy machines (A.5), and `seq_detect_mealy` to read and run.
 
@@ -36,8 +36,8 @@ Mealy machines are read rather than presented, covered in
 below, and exercise 4 has you write one.
 
 Reading A.5 matters more than it might look. Everything presented is Moore, and Moore is the
-default here and in the follow-on CAN course. A.5 is where you find out what the alternative costs
-and buys, which is the only way that default becomes a choice rather than a habit.
+default here. A.5 is where you find out what the alternative costs and buys, which is the only way
+that default becomes a choice rather than a habit.
 
 ---
 
@@ -65,7 +65,7 @@ and buys, which is the only way that default becomes a choice rather than a habi
   Karnaugh-derived equations, and build the result in CircuitVerse.
 * Model the same machine in VHDL with an enumerated `state_t` type and a `case` process.
 * Recognize a Mealy machine on sight and say what its output costs and buys, one clock cycle of
-  latency against one extra state, and why Moore is the default here and in the CAN course.
+  latency against one extra state, and why Moore is the default here.
 * Compose a state machine with previously built subcomponents rather than rewriting them. By the
   capstone that means three earlier lectures' modules around a machine that is the only new logic,
   drawing on the shift and counter idioms of one more.
@@ -121,11 +121,5 @@ by hand before writing it in synthesizable VHDL and watching it run on a real FP
 built along the way, the double-flop synchronizer, the `process`/`case` coding style, and now the
 Moore state machine, was reused again in this lecture's own examples, and carries forward unchanged
 into whatever you build next.
-
-This course ends where a separate, follow-on course begins:
-[CAN Controller Design](https://github.com/qrtech-academy/can-controller-design), which designs a
-real CAN bus controller's receive and transmit logic as VHDL state machines, running on the same
-FPGA, built directly on the Moore/Mealy foundation from this lecture. It is also where you learn to
-*write* the testbenches this course only had you run.
 
 ---

@@ -395,8 +395,8 @@ Every VHDL module you write for an exercise comes with a **self-checking testben
 file that drives your inputs, checks your outputs, and tells you which case failed. L01's exercise 2
 already shipped one, and L01 A.5 gave you the three commands that run it.
 
-You do not write testbenches in this course, which is the follow-on CAN Controller Design course's
-subject. Running them is enough to verify every exercise on your own laptop, with no FPGA board.
+You do not write testbenches in this course. Running them is enough to verify every exercise on
+your own laptop, with no FPGA board.
 
 [Appendix C](./c_testbenches.md) is the full guide: what a testbench is and why its entity has no
 ports, the analyze -> elaborate -> run sequence, how to read a failed assertion, and how your

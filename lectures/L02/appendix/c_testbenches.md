@@ -1,9 +1,8 @@
 # Appendix C - Verifying your VHDL with a testbench
 
 This appendix is the course's guide to **running** testbenches, and every later lecture's exercises
-point back here. You do not write testbenches in this course, which is the follow-on CAN Controller
-Design course's subject, but you run one after every VHDL exercise, because with no FPGA board of
-your own that is what verifies your VHDL. Every worked example and every exercise ships a ready-made
+point back here. You do not write testbenches in this course, but you run one after every VHDL
+exercise, because with no FPGA board of your own that is what verifies your VHDL. Every worked example and every exercise ships a ready-made
 `<module>_tb.vhd`.
 
 ---

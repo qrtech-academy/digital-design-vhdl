@@ -295,8 +295,8 @@ notes. This exercise sends them most significant first:
   transmitter in exercise 7 is its mirror.
 * the provided testbenches transmit and expect MSB-first to match, so the pair is self-consistent.
 * to speak to a real UART you would flip the shift direction to L06 A.2's mirror-image form and
-  change nothing else. The follow-on UART course does exactly that. Worth knowing before you wire
-  this to a PC's serial port and wonder why every byte arrives bit-reversed.
+  change nothing else. Worth knowing before you wire this to a PC's serial port and wonder why every
+  byte arrives bit-reversed.
 
 ### Oversampling: sixteen ticks per bit
 The receiver has to find the middle of a bit whose start it can only infer. The technique is
@@ -314,8 +314,7 @@ per bit period, and count them.
 Sampling mid-bit rather than at the edges is what gives the receiver its timing margin. The
 transmitter's clock is a different physical crystal from yours, so the two drift apart over a
 frame; a receiver that sampled near the boundaries would read the wrong bit as soon as they did.
-Sixteen ticks is the conventional choice and the one the follow-on UART course uses, where the same
-tick also drives the transmitter.
+Sixteen ticks is the conventional choice.
 
 ### The `uart_rx8` entity
 
@@ -425,8 +424,8 @@ frame <= frame(6 downto 0) & rx_s2;
 
 `bit_count` then only counts *how many* bits have arrived, never *where* they go. Storing with
 `frame(bit_count) <= rx_s2` instead puts the first-arriving bit in bit 0, which reverses the byte:
-that is the least-significant-first order a real UART uses, and the follow-on course does exactly
-that on purpose. Here the line is MSB first, so the shift is the one that matches.
+that is the least-significant-first order a real UART uses. Here the line is MSB first, so the
+shift is the one that matches.
 
 Four things that decide whether this works:
 
@@ -559,8 +558,7 @@ receiver does:
 You wrote this as a module in [L06 exercise 7b](../../L06/appendix/b_exercises.md), and `piso8` is
 worth rereading for the idiom. Instantiating it here would work, but the machine already owns the
 bit counter that a PISO register needs, so the shift is one line inside the state it belongs to.
-That is how both halves of this link are built, and how the follow-on UART course builds them
-too.
+That is how both halves of this link are built.
 
 **c)** Implement it, instantiating `reset_sync` for the reset and `timer` with `BIT_TICK_COUNT`
 passed straight through.
