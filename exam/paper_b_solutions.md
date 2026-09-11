@@ -1034,9 +1034,9 @@ registered, cannot glitch.
 **Which to reach for: Moore, by default.** Its output depends on no primary input, so it cannot
 follow one; a Mealy output can in principle glitch combinationally if its inputs are not already
 clean; and a machine whose output depends on fewer things is a machine with fewer ways to be wrong.
-It is what the rest of this course and the follow-on CAN course use. Reach for Mealy only when you
-specifically need the lower latency or the smaller state count, and know you are trading a
-synchronous output for a combinational one when you do.
+It is what the rest of this course uses. Reach for Mealy only when you specifically need the lower
+latency or the smaller state count, and know you are trading a synchronous output for a
+combinational one when you do.
 *(1 mark)*
 
 Credit an answer that adds that "Moore" alone does not mean glitch-free: an output decoded
