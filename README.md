@@ -12,6 +12,12 @@ rather than taught: they appear where the language needs them, and in L08 where 
 is designed by hand before it is written. See [Prerequisites](./info/README.md#prerequisites) for
 what that assumes.
 
+That refresher is short because it is a reminder, not an introduction. If any of it would be new,
+begin with the junior track's
+[Digital Electronics](https://github.com/qrtech-academy/digital-electronics), which covers exactly
+this ground from a single logic gate up to a state machine, by hand and in CircuitVerse. This course
+starts where that one ends.
+
 ---
 
 ## About the Course

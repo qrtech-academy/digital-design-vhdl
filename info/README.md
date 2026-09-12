@@ -14,8 +14,14 @@ already comfortable with:
 * Registers, D flip-flops, and what a clock edge does.
 * State machines as a concept: states, transitions, and the difference between Moore and Mealy.
 
-None of that is taught from scratch. It is refreshed where the language needs it, briefly, and
-mostly in the appendices: L01 restates gate and Boolean notation so the course has one convention,
+None of that is taught from scratch, and the course is the poorer place to meet it first. The
+junior track's [Digital Electronics](https://github.com/qrtech-academy/digital-electronics) teaches
+all five points above from the ground up, derived by hand and simulated in CircuitVerse, and this
+course is written to start where that one ends; anyone arriving without that background is better
+served by taking it first.
+
+What is here instead is refreshed where the language needs it, briefly, and mostly in the
+appendices: L01 restates gate and Boolean notation so the course has one convention,
 L02 works a Karnaugh map end to end in the lecture because minimization is what motivates the VHDL
 that follows, and L08 designs one state machine by hand before writing it, because seeing the state
 table become a `case` statement is the point of the lecture.
