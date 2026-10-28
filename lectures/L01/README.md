@@ -43,8 +43,7 @@ Work through [Appendix B](./appendix/b_exercises.md).
 ## What you should be able to do afterwards
 * Derive a sum-of-products equation from a truth table, then build and simulate the network in
   CircuitVerse.
-* Apply De Morgan to move an inversion through a gate, and use it to realize a function in a gate
-  set that does not contain the operator you started with.
+* Build NOT, AND and OR from NAND gates alone, and use De Morgan to explain why the OR case works.
 * Read and write a combinational VHDL module, an `entity` with `std_logic` ports and an
   `architecture` driving its output, and say why VHDL separates the two.
 * Explain why a concurrent assignment describes a wire rather than a statement that runs once, and
