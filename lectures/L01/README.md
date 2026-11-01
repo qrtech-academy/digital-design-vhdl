@@ -37,6 +37,7 @@ you will need GHDL for the exercises, following [L02 Appendix C](../L02/appendix
 
 ## After the lecture
 Work through [Appendix B](./appendix/b_exercises.md).
+Solutions are [here](./exercises/README.md).
 
 ---
 

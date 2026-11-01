@@ -19,31 +19,31 @@ constant INPUT_MAX  : natural := 2**INPUT_WIDTH - 1;
 constant WAIT_NS    : time := 10 ns;
 
 -- The expected output for every input combination, transcribed from A.6's truth table and
--- indexed by (driver_brake, sensor, radar, error) read as a 4-bit number.
+-- indexed by (driver_brake, sensor, camera, error) read as a 4-bit number.
 --
 -- The other testbenches in this lecture restate their rule as an expression, which works
 -- when the rule is one operator wide. This one is a table on purpose: an expression here
 -- would be the same four gates the module under test is supposed to contain, so it would
 -- agree with a wrong design that made the same mistake. The requirement, written out row by
 -- row, cannot.
-constant EXPECTED: std_logic_vector(0 to INPUT_MAX) := "0010101011111111";
+constant EXPECTED: std_logic_vector(0 to INPUT_MAX) := "0000001011111111";
 
-signal driver_brake, sensor, radar, error, engine_brake: std_logic;
+signal driver_brake, sensor, camera, error, engine_brake: std_logic;
 begin
     dut: entity work.adas
-        port map(driver_brake, sensor, radar, error, engine_brake);
+        port map(driver_brake, sensor, camera, error, engine_brake);
 
     SIM_PROCESS: process is
     begin
         for i in 0 to INPUT_MAX loop
-            (driver_brake, sensor, radar, error) <=
+            (driver_brake, sensor, camera, error) <=
                 std_logic_vector(to_unsigned(i, INPUT_WIDTH));
             wait for WAIT_NS;
             assert engine_brake = EXPECTED(i)
                 report "adas: wrong output at i = " & integer'image(i)
                      & " (driver_brake=" & std_logic'image(driver_brake)
                      & " sensor=" & std_logic'image(sensor)
-                     & " radar=" & std_logic'image(radar)
+                     & " camera=" & std_logic'image(camera)
                      & " error=" & std_logic'image(error)
                      & "), expected " & std_logic'image(EXPECTED(i))
                      & " but got " & std_logic'image(engine_brake) & "!"

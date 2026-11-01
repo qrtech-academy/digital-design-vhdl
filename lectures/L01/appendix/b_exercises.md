@@ -220,9 +220,9 @@ The entity must have:
 | Port | Direction | Type | Description |
 |---|---|---|---|
 | `driver_brake` | in | `std_logic` | The driver is on the brake pedal. |
-| `sensor` | in | `std_logic` | The proximity sensor sees an obstacle. |
-| `radar` | in | `std_logic` | The radar sees an obstacle. |
-| `error` | in | `std_logic` | The assistance system is reporting a fault. |
+| `sensor` | in | `std_logic` | The object in front of the vehicle is approaching. |
+| `camera` | in | `std_logic` | There is an object in front of the vehicle. |
+| `error` | in | `std_logic` | The assistance system is reporting a fault; `0` means it works as intended. |
 | `engine_brake` | out | `std_logic` | Apply the brakes. |
 
 **a)** Implement it from **your own** equations rather than from what was on screen. If the two
@@ -239,10 +239,11 @@ Use two concurrent assignments and one internal `signal`:
 the fault logic instead of letting it bypass:
 
 ```vhdl
-engine_brake <= (driver_brake or sensor or radar) and (not error);
+engine_brake <= (driver_brake or (sensor and camera)) and (not error);
 ```
 
-That is one gate simpler, and it looks reasonable. Run the testbench against it and answer:
+That takes just as many two-input gates, and it looks reasonable. Run the testbench against it and
+answer:
 * Which input combination does it fail on first, and what is physically happening in the car at
   that moment?
 * How many of the sixteen rows does it get wrong, and what do they all have in common?
@@ -252,7 +253,7 @@ That is one gate simpler, and it looks reasonable. Run the testbench against it 
 
 ![Module `adas`](./images/adas.png)
 
-**Self-check:** name your entity `adas`, with inputs `driver_brake`, `sensor`, `radar`, `error` and
+**Self-check:** name your entity `adas`, with inputs `driver_brake`, `sensor`, `camera`, `error` and
 output `engine_brake`, declared in that order; its testbench is in
 [`exercises/adas/`](../exercises/adas) and checks all sixteen rows of A.6's truth table.
 

@@ -245,20 +245,22 @@ you confirm a module works.
 The lecture builds a different circuit from `or_gate`, live, so you see the same path walked twice:
 once here in writing, and once on something you have not already read the answer to.
 
-The requirement: **the car brakes if the driver brakes, or if the assistance system decides to.**
-The assistance system decides to when either detector sees something, unless it is reporting a
-fault, in which case it is not trusted to brake at all.
+The requirement: **the car brakes only if the driver brakes, or if the assistance system tells it
+to.** The assistance system tells it to only when `sensor` and `camera` are both `1` and `error` is
+`0`: the camera indicates an object in front of the vehicle, the sensor indicates that the object is
+approaching, and the error signal indicates that the assistance system works as intended.
 
 | Port | Direction | Meaning |
 |---|---|---|
 | `driver_brake` | in | The driver is on the brake pedal. |
-| `sensor` | in | The proximity sensor sees an obstacle. |
-| `radar` | in | The radar sees an obstacle. |
-| `error` | in | The assistance system is reporting a fault. |
+| `sensor` | in | The object in front of the vehicle is approaching. |
+| `camera` | in | There is an object in front of the vehicle. |
+| `error` | in | The assistance system is reporting a fault; `0` means it works as intended. |
 | `engine_brake` | out | Apply the brakes. |
 
 Three clauses decide the whole structure between them:
-* either detector is enough on its own, and neither is trusted more than the other.
+* neither detector is enough on its own: an object is only a reason to brake if it is both in
+  front of the vehicle and approaching.
 * a fault does not raise an alarm; it *suppresses* the assistance system's ability to brake.
 * the driver can always brake, including when the assistance system is faulty and doing nothing.
 
@@ -272,21 +274,21 @@ Sixteen rows, in the order a four-bit counter would produce them. `adas_brake` i
 the assistance system's own decision, shown as an intermediate column so you can see where the
 structure comes from.
 
-| `driver_brake` | `sensor` | `radar` | `error` | `adas_brake` | `engine_brake` |
+| `driver_brake` | `sensor` | `camera` | `error` | `adas_brake` | `engine_brake` |
 |---|---|---|---|---|---|
 | 0 | 0 | 0 | 0 | 0 | 0 |
 | 0 | 0 | 0 | 1 | 0 | 0 |
-| 0 | 0 | 1 | 0 | 1 | 1 |
+| 0 | 0 | 1 | 0 | 0 | 0 |
 | 0 | 0 | 1 | 1 | 0 | 0 |
-| 0 | 1 | 0 | 0 | 1 | 1 |
+| 0 | 1 | 0 | 0 | 0 | 0 |
 | 0 | 1 | 0 | 1 | 0 | 0 |
 | 0 | 1 | 1 | 0 | 1 | 1 |
 | 0 | 1 | 1 | 1 | 0 | 0 |
 | 1 | 0 | 0 | 0 | 0 | 1 |
 | 1 | 0 | 0 | 1 | 0 | 1 |
-| 1 | 0 | 1 | 0 | 1 | 1 |
+| 1 | 0 | 1 | 0 | 0 | 1 |
 | 1 | 0 | 1 | 1 | 0 | 1 |
-| 1 | 1 | 0 | 0 | 1 | 1 |
+| 1 | 1 | 0 | 0 | 0 | 1 |
 | 1 | 1 | 0 | 1 | 0 | 1 |
 | 1 | 1 | 1 | 0 | 1 | 1 |
 | 1 | 1 | 1 | 1 | 0 | 1 |
