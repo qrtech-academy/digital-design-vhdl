@@ -29,7 +29,7 @@ NAND_GATE = Entity("nand_gate", [P("a"), P("b")], [P("x")])
 HALF_ADDER = Entity("half_adder", [P("a"), P("b")], [P("sum"), P("carry")])
 ADAS = Entity(
     "adas",
-    [P("driver_brake"), P("sensor"), P("radar"), P("error")],
+    [P("driver_brake"), P("sensor"), P("camera"), P("error")],
     [P("engine_brake")])
 
 # ----------------------------------------------------------------------------------------

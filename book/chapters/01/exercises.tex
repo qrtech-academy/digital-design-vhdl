@@ -260,9 +260,10 @@ The entity must have:
   \thead{Port} & \thead{Direction} & \thead{Type} & \thead{Description} \\
   \midrule
   \code{driver_brake} & in & \code{std_logic} & The driver is on the brake pedal. \\
-  \code{sensor} & in & \code{std_logic} & The proximity sensor sees an obstacle. \\
-  \code{radar} & in & \code{std_logic} & The radar sees an obstacle. \\
-  \code{error} & in & \code{std_logic} & The assistance system is reporting a fault. \\
+  \code{sensor} & in & \code{std_logic} & The object in front of the vehicle is approaching. \\
+  \code{camera} & in & \code{std_logic} & There is an object in front of the vehicle. \\
+  \code{error} & in & \code{std_logic} & The assistance system is reporting a fault; \code{0} means
+    it works as intended. \\
   \code{engine_brake} & out & \code{std_logic} & Apply the brakes. \\
 \end{booktable}
 
@@ -283,10 +284,11 @@ The entity must have:
     \code{driver_brake} \emph{through} the fault logic instead of letting it bypass:
 
 \begin{vhdlcode}
-engine_brake <= (driver_brake or sensor or radar) and (not error);
+engine_brake <= (driver_brake or (sensor and camera)) and (not error);
 \end{vhdlcode}
 
-    That is one gate simpler, and it looks reasonable. Run the testbench against it and answer:
+    That takes just as many two-input gates, and it looks reasonable. Run the testbench against it
+    and answer:
     \begin{itemize}
       \item Which input combination does it fail on first, and what is physically happening in the
         car at that moment?
@@ -300,5 +302,5 @@ engine_brake <= (driver_brake or sensor or radar) and (not error);
 \modulefigure{adas}
 
 \selfcheck name your entity \code{adas}, with inputs \code{driver_brake}, \code{sensor},
-\code{radar}, \code{error} and output \code{engine_brake}, declared in that order; its testbench is
+\code{camera}, \code{error} and output \code{engine_brake}, declared in that order; its testbench is
 in \file{exercises/adas} and checks all sixteen rows of \secref{c1:a6}'s truth table.

@@ -257,23 +257,27 @@ in \secref{c2:app:c}; for now, treat these three commands as how you confirm a m
 The course builds a different circuit from \code{or_gate}, live, so you see the same path walked
 twice: once here in writing, and once on something you have not already read the answer to.
 
-The requirement: \textbf{the car brakes if the driver brakes, or if the assistance system decides
-to.} The assistance system decides to when either detector sees something, unless it is reporting a
-fault, in which case it is not trusted to brake at all.
+The requirement: \textbf{the car brakes only if the driver brakes, or if the assistance system tells
+it to.} The assistance system tells it to only when \code{sensor} and \code{camera} are both
+\code{1} and \code{error} is \code{0}: the camera indicates an object in front of the vehicle, the
+sensor indicates that the object is approaching, and the error signal indicates that the assistance
+system works as intended.
 
 \begin{booktable}{@{}p{7.5em}p{5em}L@{}}
   \thead{Port} & \thead{Direction} & \thead{Meaning} \\
   \midrule
   \code{driver_brake} & in & The driver is on the brake pedal. \\
-  \code{sensor} & in & The proximity sensor sees an obstacle. \\
-  \code{radar} & in & The radar sees an obstacle. \\
-  \code{error} & in & The assistance system is reporting a fault. \\
+  \code{sensor} & in & The object in front of the vehicle is approaching. \\
+  \code{camera} & in & There is an object in front of the vehicle. \\
+  \code{error} & in & The assistance system is reporting a fault; \code{0} means it works as
+    intended. \\
   \code{engine_brake} & out & Apply the brakes. \\
 \end{booktable}
 
 \noindent Three clauses decide the whole structure between them:
 \begin{itemize}
-  \item either detector is enough on its own, and neither is trusted more than the other.
+  \item neither detector is enough on its own: an object is only a reason to brake if it is both in
+    front of the vehicle and approaching.
   \item a fault does not raise an alarm; it \emph{suppresses} the assistance system's ability to
     brake.
   \item the driver can always brake, including when the assistance system is faulty and doing
@@ -291,22 +295,22 @@ it is the assistance system's own decision, shown as an intermediate column so y
 the structure comes from.
 
 \begin{narrowtable}{@{}cccccc@{}}
-  \thead{\code{driver_brake}} & \thead{\code{sensor}} & \thead{\code{radar}} & \thead{\code{error}}
+  \thead{\code{driver_brake}} & \thead{\code{sensor}} & \thead{\code{camera}} & \thead{\code{error}}
     & \thead{\code{adas_brake}} & \thead{\code{engine_brake}} \\
   \midrule
   0 & 0 & 0 & 0 & 0 & 0 \\
   0 & 0 & 0 & 1 & 0 & 0 \\
-  0 & 0 & 1 & 0 & 1 & 1 \\
+  0 & 0 & 1 & 0 & 0 & 0 \\
   0 & 0 & 1 & 1 & 0 & 0 \\
-  0 & 1 & 0 & 0 & 1 & 1 \\
+  0 & 1 & 0 & 0 & 0 & 0 \\
   0 & 1 & 0 & 1 & 0 & 0 \\
   0 & 1 & 1 & 0 & 1 & 1 \\
   0 & 1 & 1 & 1 & 0 & 0 \\
   1 & 0 & 0 & 0 & 0 & 1 \\
   1 & 0 & 0 & 1 & 0 & 1 \\
-  1 & 0 & 1 & 0 & 1 & 1 \\
+  1 & 0 & 1 & 0 & 0 & 1 \\
   1 & 0 & 1 & 1 & 0 & 1 \\
-  1 & 1 & 0 & 0 & 1 & 1 \\
+  1 & 1 & 0 & 0 & 0 & 1 \\
   1 & 1 & 0 & 1 & 0 & 1 \\
   1 & 1 & 1 & 0 & 1 & 1 \\
   1 & 1 & 1 & 1 & 0 & 1 \\
